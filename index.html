@@ -1,0 +1,1440 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบแจ้งงานซ่อมบำรุงดิจิทัล</title>
+<style>
+  :root{
+    --ink:#1f2421; --ink-soft:#5b625d; --ink-faint:#8b918c;
+    --paper:#fbfaf7; --card:#ffffff; --line:#e2e0d8;
+    --accent:#0f6e56; --accent-soft:#e1f5ee; --accent-strong:#085041;
+    --warn:#993c1d; --warn-soft:#faece7;
+    --urgent:#791f1f; --urgent-soft:#fcebeb;
+    --ok:#27500a; --ok-soft:#eaf3de;
+    --radius:10px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    background:var(--paper); color:var(--ink); line-height:1.5;
+  }
+  .wrap{max-width:760px; margin:0 auto; padding:20px 16px 60px;}
+  header{padding:8px 0 20px;}
+  header h1{font-size:20px; font-weight:700; margin:0 0 4px;}
+  header p{font-size:13px; color:var(--ink-soft); margin:0;}
+
+  .tabbar{display:flex; align-items:center; gap:10px; margin-bottom:20px; border-bottom:1px solid var(--line);}
+  .tabs{display:flex; gap:6px; flex:1;}
+  .tab{
+    text-align:center; padding:12px 8px; font-size:14px; font-weight:600;
+    color:var(--ink-faint); cursor:pointer; border-bottom:2px solid transparent; user-select:none;
+  }
+  .tab.active{color:var(--accent-strong); border-bottom-color:var(--accent);}
+  .staff-link{
+    font-size:12px; color:var(--ink-faint); background:none; border:none; padding:6px 4px;
+    white-space:nowrap; text-decoration:underline; margin-bottom:8px;
+  }
+  .staff-link.on{color:var(--accent-strong); text-decoration:none; font-weight:600;}
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:18px; margin-bottom:14px;}
+  .card h2{font-size:15px; font-weight:700; margin:0 0 14px;}
+
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:13px; font-weight:600; color:var(--ink-soft); margin-bottom:5px;}
+  .hint{font-size:12px; color:var(--ink-faint); margin-top:3px;}
+  input[type=text], input[type=date], input[type=number], select, textarea{
+    width:100%; padding:9px 10px; font-size:14px; border:1px solid var(--line);
+    border-radius:8px; background:#fff; color:var(--ink); font-family:inherit;
+  }
+  input:focus, select:focus, textarea:focus{outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent);}
+  textarea{min-height:70px; resize:vertical;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  @media (max-width:480px){ .row2{grid-template-columns:1fr;} }
+
+  .radiogrp{display:flex; gap:8px; flex-wrap:wrap;}
+  .radiogrp label{
+    flex:1; display:flex; align-items:center; justify-content:center; gap:6px;
+    padding:10px; border:1px solid var(--line); border-radius:8px; font-size:13px; font-weight:600;
+    cursor:pointer; color:var(--ink-soft); min-width:90px;
+  }
+  .radiogrp input{width:auto; margin:0;}
+  .radiogrp input:checked + span{color:inherit}
+  .radiogrp label:has(input:checked){border-color:var(--accent); background:var(--accent-soft); color:var(--accent-strong);}
+
+  .stars{display:flex; gap:4px;}
+  .star{
+    width:34px; height:34px; border:1px solid var(--line); border-radius:6px; background:#fff;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:15px; color:var(--ink-faint);
+  }
+  .star.on{background:#faeeda; border-color:#ef9f27; color:#854f0b;}
+
+  button{font-family:inherit; cursor:pointer;}
+  .btn-primary{
+    width:100%; padding:13px; font-size:15px; font-weight:700; color:#fff;
+    background:var(--accent); border:none; border-radius:8px;
+  }
+  .btn-primary:active{transform:scale(.99);}
+  .btn-secondary{
+    padding:8px 14px; font-size:13px; font-weight:600; color:var(--ink);
+    background:#fff; border:1px solid var(--line); border-radius:8px;
+  }
+  .btn-danger{color:var(--urgent);}
+
+  .msg{padding:10px 12px; border-radius:8px; font-size:13px; margin-bottom:14px; display:none;}
+  .msg.show{display:block;}
+  .msg.success{background:var(--ok-soft); color:var(--ok);}
+  .msg.error{background:var(--urgent-soft); color:var(--urgent);}
+
+  .filters{display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap;}
+  .chip{
+    padding:6px 12px; font-size:12px; font-weight:600; border-radius:20px;
+    border:1px solid var(--line); background:#fff; color:var(--ink-soft); cursor:pointer;
+  }
+  .chip.active{background:var(--ink); border-color:var(--ink); color:#fff;}
+
+  .job{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:14px; margin-bottom:10px; cursor:pointer;}
+  .job:hover{border-color:var(--accent);}
+  .job-top{display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:6px;}
+  .job-id{font-size:12px; color:var(--ink-faint); font-family:monospace;}
+  .badge{font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px; white-space:nowrap;}
+  .badge.รอมอบหมาย{background:#faeeda; color:#854f0b;}
+  .badge.กำลังดำเนินการ{background:#e6f1fb; color:#0c447c;}
+  .badge.เสร็จ{background:var(--ok-soft); color:var(--ok);}
+  .badge.ยกเลิก{background:#f1efe8; color:#5f5e5a;}
+  .badge.approval-pending{background:#f3e8fd; color:#6b21a8;}
+  .badge.approval-rejected{background:var(--urgent-soft); color:var(--urgent);}
+  .btn-approve{color:var(--ok); border-color:var(--ok);}
+  .btn-reject{color:var(--urgent); border-color:var(--urgent);}
+  .reject-banner{background:var(--urgent-soft); border:1px solid var(--urgent); border-radius:8px; padding:12px 14px; margin-bottom:14px; font-size:13px;}
+  .reject-banner b{color:var(--urgent);}
+  .job-desc{font-size:14px; font-weight:600; margin:0 0 4px;}
+  .job-meta{font-size:12px; color:var(--ink-soft);}
+  .empty{text-align:center; padding:40px 20px; color:var(--ink-faint); font-size:14px;}
+
+  .overlay{position:fixed; inset:0; background:rgba(0,0,0,.4); display:none; align-items:flex-start; justify-content:center; padding:20px; z-index:50; overflow-y:auto;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--paper); border-radius:var(--radius); max-width:520px; width:100%; padding:20px; margin-top:20px;}
+  .modal-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;}
+  .modal-head h2{font-size:16px; margin:0;}
+  .close-x{background:none; border:none; font-size:20px; color:var(--ink-faint); line-height:1;}
+
+  .job-actions{display:flex; gap:8px; margin-top:8px;}
+  .print-btn{
+    font-size:12px; font-weight:600; padding:6px 10px; border:1px solid var(--line);
+    border-radius:6px; background:#fff; color:var(--ink-soft);
+  }
+  .print-btn:hover{border-color:var(--accent); color:var(--accent-strong);}
+
+  #printArea{display:none;}
+  @page{ size:A4 portrait; margin:9mm 10mm; }
+  @media print{
+    body *{visibility:hidden;}
+    #printArea, #printArea *{visibility:visible;}
+    #printArea{display:block; position:absolute; top:0; left:0; width:100%; padding:0; margin:0;}
+    .pf-page{box-shadow:none !important;}
+  }
+  /* ===== Printed form — must reproduce FR-MN-05 / FR-MN-06 / FR-MN-07 controlled documents exactly (layout, wording, order) ===== */
+  .pf{font-family:"TH Sarabun New","Sarabun",Tahoma,sans-serif; color:#000; font-size:13.5px; line-height:1.32;}
+  .pf-frame-wrap{width:100%; max-width:190mm; margin:0 auto;}
+  .pf-page{border:1.3px solid #000; padding:5mm 6mm 3mm; box-sizing:border-box; width:100%; margin:0;}
+  .pf-below-frame{display:flex; justify-content:space-between; align-items:flex-end; gap:8px; margin:3px 2px 0;}
+  .pf-refnote-outside{font-size:8.5px; color:#999;}
+  .pf-footer-outside{font-size:10.5px; color:#000; text-align:right;}
+  .pf-logo{height:9mm; width:auto; display:block; margin:0 0 3px;}
+  .pf-top{display:flex; justify-content:flex-end; font-size:12.5px; margin-bottom:2px;}
+  .pf-header3{display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:0;}
+  .pf-header3 .side{font-size:12.5px; min-width:100px;}
+  .pf-header3 .side .lbl{font-weight:700;}
+  .pf-header3 .side.right{text-align:right;}
+  .pf-title{text-align:center; font-weight:700; font-size:16px; letter-spacing:1.5px; margin:0;}
+  .pf-subtitle{text-align:center; font-weight:700; font-size:14.5px; margin:0 0 6px;}
+  .pf-row{display:flex; gap:8px; margin-bottom:4px; align-items:baseline; flex-wrap:wrap;}
+  .pf-row .lbl{font-weight:700; white-space:nowrap;}
+  .pf-row .val{border-bottom:1px dotted #000; flex:1; min-width:60px; padding:0 4px;}
+  .pf-urgency{display:flex; gap:10px; font-size:13px; align-items:center; white-space:nowrap;}
+  .pf-urgency .chk{display:inline-flex; align-items:center; justify-content:center; width:11px; height:11px; border:1px solid #000; font-size:9px; font-weight:700; margin-right:3px; vertical-align:middle;}
+  .pf-boxlabel{font-weight:700; margin:3px 0 1px;}
+  .pf-box{border:1px solid #000; min-height:46px; padding:3px 6px; margin:0 0 4px; white-space:pre-wrap; font-size:13px;}
+  .pf-sig{display:flex; justify-content:space-between; margin-top:6px; font-size:13px; gap:12px;}
+  .pf-sig.pf-sig-single{justify-content:flex-end;}
+  .pf-sig .sigcol{width:47%; text-align:center; display:flex; flex-direction:column; word-break:break-word; overflow-wrap:break-word;}
+  .pf-sig .sigcol .sig-label{min-height:20px; display:flex; align-items:flex-end; justify-content:center; line-height:1.25; font-weight:700;}
+  .pf-sig .sigcol .sig-line{margin:8px 0 3px;}
+  .pf-sig .sigcol .sig-dots{display:inline-block; width:58%; border-bottom:1px dotted #000; vertical-align:bottom; margin-left:4px;}
+  .pf-sig .sigcol .sig-date{margin-bottom:1px;}
+  .pf-sig .sigcol .sig-role{}
+  .pf-footer{margin-top:8px; font-size:10.5px; color:#000; text-align:left;}
+  .pf-footer.pf-footer-right{text-align:right;}
+  .pf-hr{border:none; border-top:1px solid #000; margin:4px 0;}
+  .pf-table{width:100%; border-collapse:collapse; font-size:11px; margin:3px 0 4px;}
+  .pf-table th, .pf-table td{border:1px solid #000; padding:1.5px 4px; text-align:center; line-height:1.2;}
+  .pf-table td:first-child, .pf-table th:first-child{text-align:left;}
+  .pf-check{font-weight:700;}
+  .pf-right{text-align:right; margin-top:4px; font-size:13px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>ระบบแจ้งงานซ่อมบำรุงดิจิทัล</h1>
+    <p>แทนใบแจ้งซ่อม (FR-MN-05) / ใบแจ้งงานสร้างต่อเติม (FR-MN-06) / ใบสั่งงาน (FR-MN-07)</p>
+  </header>
+
+  <div class="tabbar">
+    <div class="tabs">
+      <div class="tab active" data-tab="new">แจ้งงานใหม่</div>
+      <div class="tab" data-tab="status">ตรวจสอบสถานะ</div>
+      <div class="tab depthead-only" data-tab="approve" style="display:none;">อนุมัติใบงาน <span id="approveCount"></span></div>
+      <div class="tab staff-only" data-tab="list" style="display:none;">รายการงาน <span id="pendingCount"></span></div>
+      <div class="tab staff-only" data-tab="export" style="display:none;">ส่งออกข้อมูล</div>
+    </div>
+    <button class="staff-link" id="settingsLink" onclick="openSettings()" title="ตั้งค่าการเชื่อมต่อเซิร์ฟเวอร์กลาง">⚙️</button>
+    <button class="staff-link" id="deptHeadLink" onclick="openDeptHeadLogin()">สำหรับหัวหน้าแผนก</button>
+    <button class="staff-link" id="staffLink" onclick="openStaffLogin()">สำหรับฝ่ายซ่อมบำรุง</button>
+  </div>
+
+  <div id="connStatus" style="display:none; font-size:12px; padding:9px 12px; border-radius:8px; margin-bottom:14px;"></div>
+
+  <div id="msg" class="msg"></div>
+
+  <!-- NEW JOB PANEL -->
+  <div class="panel active" id="panel-new">
+    <div id="rejectedBanner"></div>
+    <div class="card">
+      <h2>ประเภทคำขอ</h2>
+      <div class="radiogrp" id="jobType">
+        <label><input type="radio" name="jobType" value="ซ่อม" checked><span>ซ่อมบำรุง</span></label>
+        <label><input type="radio" name="jobType" value="สร้างต่อเติม"><span>สร้าง / ต่อเติม</span></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>รายละเอียดคำขอ</h2>
+      <div class="field" id="subCategoryField">
+        <label>ประเภทงานย่อย</label>
+        <select id="subCategory">
+          <option>ซ่อมเครื่องจักรการผลิต</option>
+          <option>ซ่อมเครื่องใช้ไฟฟ้า</option>
+          <option>ซ่อมอาคารสถานที่</option>
+          <option>ซ่อมเครื่องมือการผลิต</option>
+          <option>ซ่อมยานพาหนะ</option>
+          <option>ซ่อมทั่วไป</option>
+          <option>ซ่อมอุปกรณ์สำนักงาน</option>
+        </select>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>แผนกที่แจ้ง</label>
+          <select id="department" onchange="renderRejectedBanner()">
+            <option>HR</option><option>SE</option><option>AC</option><option>PU</option><option>MN</option>
+            <option>PL</option><option>MC</option><option>PA</option><option>WH</option><option>FG</option>
+            <option>QA</option><option>PV</option><option>DD</option><option>ES</option><option>DS</option>
+            <option>AP</option><option>LE</option><option>MM</option><option>SO</option><option>MD</option>
+            <option>IT</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>ผู้แจ้ง</label>
+          <input type="text" id="requester" placeholder="ชื่อ-สกุล">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>พื้นที่</label>
+          <input type="text" id="area" placeholder="เช่น โรงงาน 2 / WH2">
+        </div>
+        <div class="field">
+          <label>ชื่อเครื่องจักร (ถ้ามี)</label>
+          <input type="text" id="machine" placeholder="เช่น CNC-06">
+        </div>
+      </div>
+      <div class="field">
+        <label>รายละเอียดงาน</label>
+        <textarea id="description" placeholder="อธิบายอาการ / งานที่ต้องการให้ทำ"></textarea>
+      </div>
+      <div class="field">
+        <label>ความเร่งด่วน</label>
+        <div class="radiogrp" id="urgency">
+          <label><input type="radio" name="urgency" value="ฉุกเฉิน"><span>ฉุกเฉิน</span></label>
+          <label><input type="radio" name="urgency" value="ด่วน"><span>ด่วน</span></label>
+          <label><input type="radio" name="urgency" value="ปกติ" checked><span>ปกติ</span></label>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>วันที่ต้องการ</label>
+          <input type="date" id="dateNeeded">
+        </div>
+        <div class="field">
+          <label>หมายเหตุ</label>
+          <input type="text" id="note" placeholder="ไม่บังคับ">
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="submitNewJob()"><span id="submitBtnLabel">บันทึกใบแจ้งงาน</span></button>
+    <div id="lastSubmitted" style="margin-top:12px; display:none;">
+      <button class="print-btn" style="width:100%; padding:10px; margin-bottom:8px;" onclick="printRequestForm(window.lastJobId)">พิมพ์ใบแจ้งงานที่เพิ่งบันทึก</button>
+      <button class="print-btn" style="width:100%; padding:10px;" onclick="goCheckLastStatus()">ตรวจสอบสถานะใบงานนี้</button>
+    </div>
+  </div>
+
+  <!-- STATUS CHECK PANEL (open to everyone) -->
+  <div class="panel" id="panel-status">
+    <div class="card">
+      <h2>ตรวจสอบสถานะใบงาน</h2>
+      <div class="row2">
+        <div class="field">
+          <label>แผนก</label>
+          <select id="statusDeptSelect" onchange="renderStatusList()"></select>
+        </div>
+        <div class="field">
+          <label>ค้นหาจากรายละเอียดงาน (ไม่บังคับ)</label>
+          <input type="text" id="statusSearchText" oninput="renderStatusList()" placeholder="พิมพ์คำค้นหา">
+        </div>
+      </div>
+    </div>
+    <div id="statusList"></div>
+  </div>
+
+  <!-- LIST PANEL -->
+  <div class="panel" id="panel-list">
+    <div class="filters" id="filters"></div>
+    <div id="jobList"></div>
+  </div>
+
+  <!-- APPROVE PANEL -->
+  <div class="panel" id="panel-approve">
+    <div id="approveList"></div>
+  </div>
+
+  <!-- EXPORT PANEL -->
+  <div class="panel" id="panel-export">
+    <div class="card export-box">
+      <div class="big" id="exportCount">0</div>
+      <p>รายการที่อนุมัติแล้ว รอซิงค์เข้าไฟล์ Excel</p>
+      <button class="btn-primary" style="margin-top:10px;" onclick="exportData()">ดาวน์โหลดไฟล์สำหรับซิงค์ (JSON)</button>
+      <p style="margin-top:16px;">นำไฟล์ที่ดาวน์โหลด ไปรันคำสั่ง<br><code>python sync_to_master.py master.xlsx export.json</code></p>
+    </div>
+    <div class="card" style="text-align:center;">
+      <p style="margin-bottom:10px;">หลังจากรันสคริปต์สำเร็จและตรวจสอบไฟล์ Excel แล้ว กดยืนยันเพื่อ<b>ลบรายการที่ซิงค์แล้วออกจากระบบนี้</b> (ข้อมูลจะยังอยู่ในไฟล์ Excel ตามปกติ)</p>
+      <button class="btn-secondary" onclick="confirmSynced()">ยืนยันว่าซิงค์เข้า Excel เรียบร้อยแล้ว — ลบออกจากระบบ</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLOSE JOB MODAL -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>ปิดงาน / บันทึกผล</h2>
+      <button class="close-x" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="card">
+      <div class="field"><label id="modalDescLabel"></label></div>
+      <div class="row2">
+        <div class="field">
+          <label>ช่างผู้รับงาน</label>
+          <select id="m_assignee">
+            <option value="">— เลือกช่าง —</option>
+            <option>เสนาะ</option><option>ชารัส</option><option>จักรพันธ์</option><option>ชาญณรงค์</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>สถานะ</label>
+          <select id="m_status">
+            <option>รอมอบหมาย</option>
+            <option>กำลังดำเนินการ</option>
+            <option>เสร็จ</option>
+            <option>ยกเลิก</option>
+          </select>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>แผนงาน (วันที่คาดว่าจะเสร็จ)</label><input type="date" id="m_plan"></div>
+        <div class="field"><label>วันเริ่มจริง</label><input type="date" id="m_start"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>วันที่เสร็จ</label><input type="date" id="m_finish"></div>
+        <div class="field"><label>เวลาทำงาน (นาที)</label><input type="number" id="m_minutes" min="0"></div>
+      </div>
+      <div class="field">
+        <label>คุณภาพ</label>
+        <div class="stars" data-target="m_quality">
+          <div class="star" data-v="1">1</div><div class="star" data-v="2">2</div><div class="star" data-v="3">3</div><div class="star" data-v="4">4</div><div class="star" data-v="5">5</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>เวลา</label>
+        <div class="stars" data-target="m_time">
+          <div class="star" data-v="1">1</div><div class="star" data-v="2">2</div><div class="star" data-v="3">3</div><div class="star" data-v="4">4</div><div class="star" data-v="5">5</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>บริการ</label>
+        <div class="stars" data-target="m_service">
+          <div class="star" data-v="1">1</div><div class="star" data-v="2">2</div><div class="star" data-v="3">3</div><div class="star" data-v="4">4</div><div class="star" data-v="5">5</div>
+        </div>
+      </div>
+      <div class="field"><label>หมายเหตุการปิดงาน</label><input type="text" id="m_closeNote"></div>
+    </div>
+    <button class="btn-primary" onclick="saveClose()">บันทึก</button>
+  </div>
+</div>
+
+<!-- PRINT AREA -->
+<div id="printArea">
+  <div class="pf-frame-wrap">
+    <div class="pf pf-page" id="printRequestContent"></div>
+    <div class="pf-below-frame">
+      <div class="pf-refnote-outside" id="printRequestRefnote"></div>
+      <div class="pf-footer-outside" id="printRequestFooter"></div>
+    </div>
+  </div>
+  <div class="pf-frame-wrap">
+    <div class="pf pf-page" id="printWorkOrderContent"></div>
+    <div class="pf-below-frame">
+      <div class="pf-refnote-outside" id="printWorkOrderRefnote"></div>
+      <div class="pf-footer-outside" id="printWorkOrderFooter"></div>
+    </div>
+  </div>
+</div>
+
+<!-- STAFF LOGIN MODAL -->
+<div class="overlay" id="staffOverlay">
+  <div class="modal" style="max-width:340px;">
+    <div class="modal-head">
+      <h2>เข้าสู่ระบบฝ่ายซ่อมบำรุง</h2>
+      <button class="close-x" onclick="closeStaffLogin()">&times;</button>
+    </div>
+    <div class="card">
+      <div class="field">
+        <label>รหัสผ่านฝ่ายซ่อมบำรุง</label>
+        <input type="password" id="staffPin" placeholder="กรอกรหัสผ่าน" inputmode="numeric">
+      </div>
+    </div>
+    <button class="btn-primary" onclick="submitStaffPin()">เข้าสู่ระบบ</button>
+  </div>
+</div>
+
+<!-- DEPT HEAD LOGIN MODAL -->
+<div class="overlay" id="deptHeadOverlay">
+  <div class="modal" style="max-width:340px;">
+    <div class="modal-head">
+      <h2>เข้าสู่ระบบหัวหน้าแผนก</h2>
+      <button class="close-x" onclick="closeDeptHeadLogin()">&times;</button>
+    </div>
+    <div class="card">
+      <div class="field">
+        <label>แผนก</label>
+        <select id="deptHeadDeptSelect"></select>
+      </div>
+      <div class="field">
+        <label>ชื่อ-สกุลผู้อนุมัติ</label>
+        <input type="text" id="deptHeadName" placeholder="กรอกชื่อ-สกุลของหัวหน้าแผนก">
+      </div>
+      <div class="field">
+        <label>รหัสผ่านหัวหน้าแผนก</label>
+        <input type="password" id="deptHeadPin" placeholder="กรอกรหัสผ่าน" inputmode="numeric">
+      </div>
+    </div>
+    <button class="btn-primary" onclick="submitDeptHeadPin()">เข้าสู่ระบบ</button>
+  </div>
+</div>
+
+<!-- REJECT REASON MODAL -->
+<div class="overlay" id="rejectOverlay">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-head">
+      <h2>ไม่อนุมัติใบงาน</h2>
+      <button class="close-x" onclick="closeRejectModal()">&times;</button>
+    </div>
+    <div class="card">
+      <div class="field">
+        <label>เหตุผลที่ไม่อนุมัติ</label>
+        <textarea id="rejectReason" placeholder="ระบุเหตุผล เพื่อให้ผู้แจ้งแก้ไขและส่งใหม่"></textarea>
+      </div>
+    </div>
+    <button class="btn-primary" style="background:var(--urgent);" onclick="submitReject()">ยืนยันไม่อนุมัติ</button>
+  </div>
+</div>
+
+
+<!-- SETTINGS MODAL -->
+<div class="overlay" id="settingsOverlay">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-head">
+      <h2>ตั้งค่าการเชื่อมต่อ</h2>
+      <button class="close-x" onclick="closeSettings()">&times;</button>
+    </div>
+    <div class="card">
+      <p style="font-size:13px; color:var(--ink-soft); margin:0 0 12px;">
+        วางลิงก์ Web App ของ Google Apps Script ที่ deploy ไว้ เพื่อให้ทุกเครื่องที่เปิดไฟล์นี้เห็นข้อมูลชุดเดียวกันแบบเรียลไทม์ (ไม่ต้องอยู่ในแชท)
+        กรอกครั้งเดียวต่อเครื่อง/เบราว์เซอร์
+      </p>
+      <div class="field">
+        <label>Web App URL</label>
+        <input type="text" id="remoteUrlInput" placeholder="https://script.google.com/macros/s/xxxx/exec">
+      </div>
+      <div id="settingsTestResult" style="font-size:12px; margin-top:-6px; margin-bottom:10px; display:none;"></div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn-secondary" style="flex:1;" onclick="testRemoteUrl()">ทดสอบการเชื่อมต่อ</button>
+        <button class="btn-secondary btn-danger" onclick="clearRemoteUrl()">รีเซ็ตเป็นค่าเริ่มต้น</button>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="saveRemoteUrl()">บันทึกและใช้งาน</button>
+  </div>
+</div>
+
+<script>
+let jobs = {};
+let currentFilter = 'ทั้งหมด';
+let currentJobId = null;
+let stars = { m_quality: 0, m_time: 0, m_service: 0 };
+
+/*
+  storage layer — 3 tiers, auto-selected in this priority order:
+
+  1) "shared-chat"  window.storage — only exists inside Claude.ai's artifact
+     sandbox when this is opened via the chat link. Shared + real-time
+     automatically, no setup needed.
+
+  2) "remote"        A Google Apps Script Web App URL saved via the ⚙️
+     settings button. This is the real standalone hosting option: any
+     device/browser that opens this .html file and has the same URL saved
+     talks to the same Google Sheet acting as a shared database — real
+     multi-device sync outside the chat, no login system of its own needed
+     beyond the existing staff PIN.
+
+  3) "local"         Plain browser localStorage. Last-resort fallback when
+     neither of the above is configured — works fully offline but data
+     stays on that one device/browser only.
+*/
+const LS_PREFIX = 'wo_';
+const REMOTE_URL_KEY = 'workorder_remote_url';
+const DEFAULT_REMOTE_URL = 'https://script.google.com/macros/s/AKfycbxZjNBrwtN-4zyEcYkAH32CH0gLdtn3NRZnX6vZRkP95r7GNLao0rOmwf67sKRS3v-zSw/exec';
+
+function getRemoteUrl(){ try{ return (localStorage.getItem(REMOTE_URL_KEY) || '').trim(); }catch(e){ return ''; } }
+function setRemoteUrl(u){ try{ if(u) localStorage.setItem(REMOTE_URL_KEY, u); else localStorage.removeItem(REMOTE_URL_KEY); }catch(e){} }
+
+const localStorageAdapter = {
+  async list(prefix){
+    const keys = [];
+    try{
+      for(let i=0;i<localStorage.length;i++){
+        const k = localStorage.key(i);
+        if(k && k.startsWith(LS_PREFIX) && k.slice(LS_PREFIX.length).startsWith(prefix)){
+          keys.push(k.slice(LS_PREFIX.length));
+        }
+      }
+    }catch(e){}
+    return { keys };
+  },
+  async get(key){
+    try{
+      const v = localStorage.getItem(LS_PREFIX + key);
+      if(v === null) throw new Error('not found');
+      return { key, value: v };
+    }catch(e){ throw new Error('not found'); }
+  },
+  async set(key, value){
+    try{ localStorage.setItem(LS_PREFIX + key, value); return { key, value }; }
+    catch(e){ return null; }
+  },
+  async delete(key){
+    try{ localStorage.removeItem(LS_PREFIX + key); return { key, deleted: true }; }
+    catch(e){ return null; }
+  }
+};
+
+function makeRemoteAdapter(baseUrl){
+  return {
+    async list(prefix){
+      const res = await fetch(`${baseUrl}?action=list&prefix=${encodeURIComponent(prefix)}`);
+      if(!res.ok) throw new Error('remote list failed: ' + res.status);
+      return await res.json();
+    },
+    async get(key){
+      const res = await fetch(`${baseUrl}?action=get&key=${encodeURIComponent(key)}`);
+      if(!res.ok) throw new Error('remote get failed: ' + res.status);
+      const data = await res.json();
+      if(!data) throw new Error('not found');
+      return data;
+    },
+    async set(key, value){
+      // text/plain avoids a CORS preflight against Apps Script Web Apps
+      const res = await fetch(baseUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'set', key, value })
+      });
+      if(!res.ok) throw new Error('remote set failed: ' + res.status);
+      return await res.json();
+    },
+    async delete(key){
+      const res = await fetch(baseUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'delete', key })
+      });
+      if(!res.ok) throw new Error('remote delete failed: ' + res.status);
+      return await res.json();
+    }
+  };
+}
+
+let storage;
+let storageMode; // 'shared-chat' | 'remote' | 'local'
+
+function initStorage(){
+  if(window.storage && typeof window.storage.set === 'function'){
+    storage = window.storage;
+    storageMode = 'shared-chat';
+    return;
+  }
+  const url = getRemoteUrl() || DEFAULT_REMOTE_URL;
+  if(url){
+    storage = makeRemoteAdapter(url);
+    storageMode = 'remote';
+    return;
+  }
+  storage = localStorageAdapter;
+  storageMode = 'local';
+}
+initStorage();
+
+async function loadJobs(){
+  try{
+    const res = await storage.list('job:', true);
+    jobs = {};
+    if(res && res.keys){
+      for(const k of res.keys){
+        try{
+          const r = await storage.get(k, true);
+          if(r) jobs[r.value ? JSON.parse(r.value).id : k] = JSON.parse(r.value);
+        }catch(e){}
+      }
+    }
+    if(storageMode === 'remote') showConnStatus('remote-ok');
+  }catch(e){
+    jobs = {};
+    if(storageMode === 'remote') showConnStatus('remote-error');
+  }
+  if(storageMode === 'local') showConnStatus('local');
+  renderList();
+  renderCounts();
+  renderRejectedBanner();
+}
+
+function showConnStatus(kind){
+  const el = document.getElementById('connStatus');
+  if(!el) return;
+  if(kind === 'local'){
+    el.style.display = 'block';
+    el.style.background = 'var(--warn-soft)';
+    el.style.color = 'var(--warn)';
+    el.innerHTML = '⚠️ ยังไม่ได้เชื่อมต่อเซิร์ฟเวอร์กลาง — ข้อมูลเก็บในเครื่องนี้เครื่องเดียว ไม่ sync กับเครื่องอื่น กด ⚙️ ด้านบนเพื่อตั้งค่า';
+  }else if(kind === 'remote-ok'){
+    el.style.display = 'block';
+    el.style.background = 'var(--ok-soft)';
+    el.style.color = 'var(--ok)';
+    el.innerHTML = '🟢 เชื่อมต่อเซิร์ฟเวอร์กลางแล้ว ข้อมูล sync กับทุกเครื่องแบบเรียลไทม์';
+    setTimeout(()=>{ el.style.display = 'none'; }, 4000);
+  }else if(kind === 'remote-error'){
+    el.style.display = 'block';
+    el.style.background = 'var(--urgent-soft)';
+    el.style.color = 'var(--urgent)';
+    el.innerHTML = '🔴 เชื่อมต่อเซิร์ฟเวอร์กลางไม่สำเร็จ ตรวจสอบลิงก์ที่ตั้งค่าไว้ (⚙️) หรือการเชื่อมต่ออินเทอร์เน็ต';
+  }
+}
+
+function openSettings(){
+  document.getElementById('remoteUrlInput').value = getRemoteUrl() || DEFAULT_REMOTE_URL;
+  document.getElementById('settingsTestResult').style.display = 'none';
+  document.getElementById('settingsOverlay').classList.add('show');
+}
+function closeSettings(){ document.getElementById('settingsOverlay').classList.remove('show'); }
+
+async function testRemoteUrl(){
+  const url = document.getElementById('remoteUrlInput').value.trim();
+  const box = document.getElementById('settingsTestResult');
+  box.style.display = 'block';
+  box.style.color = 'var(--ink-soft)';
+  box.textContent = 'กำลังทดสอบ...';
+  if(!url){ box.style.color = 'var(--urgent)'; box.textContent = 'กรุณาวางลิงก์ก่อน'; return; }
+  try{
+    const adapter = makeRemoteAdapter(url);
+    const res = await adapter.list('job:');
+    if(res && Array.isArray(res.keys)){
+      box.style.color = 'var(--ok)';
+      box.textContent = `✅ เชื่อมต่อสำเร็จ (พบ ${res.keys.length} รายการในเซิร์ฟเวอร์)`;
+    }else{
+      box.style.color = 'var(--urgent)';
+      box.textContent = '⚠️ เชื่อมต่อได้แต่รูปแบบข้อมูลไม่ถูกต้อง ตรวจสอบโค้ด Apps Script';
+    }
+  }catch(e){
+    box.style.color = 'var(--urgent)';
+    box.textContent = '❌ เชื่อมต่อไม่สำเร็จ ตรวจสอบลิงก์และการตั้งค่า deploy (Anyone can access)';
+  }
+}
+
+function saveRemoteUrl(){
+  const url = document.getElementById('remoteUrlInput').value.trim();
+  setRemoteUrl(url);
+  closeSettings();
+  initStorage();
+  showMsg(url ? 'บันทึกการตั้งค่าแล้ว กำลังโหลดข้อมูลใหม่...' : 'ล้างการตั้งค่าแล้ว', 'success');
+  loadJobs();
+}
+
+function clearRemoteUrl(){
+  document.getElementById('remoteUrlInput').value = DEFAULT_REMOTE_URL;
+  setRemoteUrl('');
+  closeSettings();
+  initStorage();
+  showMsg('รีเซ็ตกลับไปใช้เซิร์ฟเวอร์กลางเริ่มต้นแล้ว', 'success');
+  loadJobs();
+}
+
+function showMsg(text, type){
+  const m = document.getElementById('msg');
+  m.textContent = text;
+  m.className = 'msg show ' + type;
+  setTimeout(()=>{ m.className = 'msg'; }, 3500);
+}
+
+const STAFF_PIN = '2547';
+let isStaff = false;
+
+const DEPARTMENTS = ['HR','SE','AC','PU','MN','PL','MC','PA','WH','FG','QA','PV','DD','ES','DS','AP','LE','MM','SO','MD','IT'];
+const DEPT_PINS = {
+  HR:'1001', SE:'1002', AC:'1003', PU:'1004', MN:'1005', PL:'1006', MC:'1007', PA:'1008',
+  WH:'1009', FG:'1010', QA:'1011', PV:'1012', DD:'1013', ES:'1014', DS:'1015', AP:'1016',
+  LE:'1017', MM:'1018', SO:'1019', MD:'1020', IT:'1021'
+};
+let isDeptHead = false;
+let deptHeadDept = '';
+let deptHeadName = '';
+let rejectTargetId = null;
+let editingJobId = null;
+
+(function populateDeptHeadSelect(){
+  const sel = document.getElementById('deptHeadDeptSelect');
+  sel.innerHTML = DEPARTMENTS.map(d=>`<option value="${d}">${d}</option>`).join('');
+})();
+(function populateStatusDeptSelect(){
+  const sel = document.getElementById('statusDeptSelect');
+  sel.innerHTML = '<option value="">— เลือกแผนก —</option>' + DEPARTMENTS.map(d=>`<option value="${d}">${d}</option>`).join('');
+})();
+
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click', ()=>{
+    if(t.classList.contains('staff-only') && !isStaff) return;
+    if(t.classList.contains('depthead-only') && !isDeptHead) return;
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('panel-'+t.dataset.tab).classList.add('active');
+    if(t.dataset.tab==='list') renderList();
+    if(t.dataset.tab==='export') renderCounts();
+    if(t.dataset.tab==='approve') renderApprovalList();
+    if(t.dataset.tab==='status') renderStatusList();
+  });
+});
+
+function openStaffLogin(){
+  if(isStaff){
+    isStaff = false;
+    document.querySelectorAll('.staff-only').forEach(t=> t.style.display = 'none');
+    document.getElementById('staffLink').textContent = 'สำหรับฝ่ายซ่อมบำรุง';
+    document.getElementById('staffLink').classList.remove('on');
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+    document.querySelector('.tab[data-tab=new]').classList.add('active');
+    document.getElementById('panel-new').classList.add('active');
+    showMsg('ออกจากระบบฝ่ายซ่อมบำรุงแล้ว', 'success');
+    return;
+  }
+  document.getElementById('staffPin').value = '';
+  document.getElementById('staffOverlay').classList.add('show');
+}
+function closeStaffLogin(){ document.getElementById('staffOverlay').classList.remove('show'); }
+function submitStaffPin(){
+  const val = document.getElementById('staffPin').value;
+  if(val === STAFF_PIN){
+    isStaff = true;
+    document.querySelectorAll('.staff-only').forEach(t=> t.style.display = '');
+    document.getElementById('staffLink').textContent = 'ฝ่ายซ่อมบำรุง (ออกจากระบบ)';
+    document.getElementById('staffLink').classList.add('on');
+    closeStaffLogin();
+    showMsg('เข้าสู่ระบบฝ่ายซ่อมบำรุงแล้ว', 'success');
+  }else{
+    showMsg('รหัสผ่านไม่ถูกต้อง', 'error');
+  }
+}
+
+function openDeptHeadLogin(){
+  if(isDeptHead){
+    isDeptHead = false;
+    deptHeadDept = '';
+    deptHeadName = '';
+    document.querySelectorAll('.depthead-only').forEach(t=> t.style.display = 'none');
+    document.getElementById('deptHeadLink').textContent = 'สำหรับหัวหน้าแผนก';
+    document.getElementById('deptHeadLink').classList.remove('on');
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+    document.querySelector('.tab[data-tab=new]').classList.add('active');
+    document.getElementById('panel-new').classList.add('active');
+    showMsg('ออกจากระบบหัวหน้าแผนกแล้ว', 'success');
+    return;
+  }
+  document.getElementById('deptHeadPin').value = '';
+  document.getElementById('deptHeadName').value = '';
+  document.getElementById('deptHeadOverlay').classList.add('show');
+}
+function closeDeptHeadLogin(){ document.getElementById('deptHeadOverlay').classList.remove('show'); }
+function submitDeptHeadPin(){
+  const dept = document.getElementById('deptHeadDeptSelect').value;
+  const name = document.getElementById('deptHeadName').value.trim();
+  const val = document.getElementById('deptHeadPin').value;
+  if(!name){ showMsg('กรุณากรอกชื่อ-สกุลผู้อนุมัติ', 'error'); return; }
+  if(DEPT_PINS[dept] && val === DEPT_PINS[dept]){
+    isDeptHead = true;
+    deptHeadDept = dept;
+    deptHeadName = name;
+    document.querySelectorAll('.depthead-only').forEach(t=> t.style.display = '');
+    document.getElementById('deptHeadLink').textContent = `${name} (ออกจากระบบ)`;
+    document.getElementById('deptHeadLink').classList.add('on');
+    closeDeptHeadLogin();
+    showMsg(`เข้าสู่ระบบหัวหน้าแผนก ${dept} ในนาม ${name} แล้ว`, 'success');
+    renderCounts();
+  }else{
+    showMsg('รหัสผ่านไม่ถูกต้อง', 'error');
+  }
+}
+
+document.querySelectorAll('input[name=jobType]').forEach(r=>{
+  r.addEventListener('change', ()=>{
+    document.getElementById('subCategoryField').style.display = r.value==='สร้างต่อเติม' && r.checked ? 'none' : 'block';
+  });
+});
+
+async function submitNewJob(){
+  const type = document.querySelector('input[name=jobType]:checked').value;
+  const description = document.getElementById('description').value.trim();
+  const department = document.getElementById('department').value;
+  if(!description){ showMsg('กรุณากรอกรายละเอียดงาน', 'error'); return; }
+
+  const isResubmit = !!editingJobId && jobs[editingJobId];
+  const id = isResubmit ? editingJobId : ('job-' + Date.now() + '-' + Math.random().toString(36).slice(2,7));
+  const today = new Date().toISOString().slice(0,10);
+  const record = {
+    id,
+    type,
+    category: type==='สร้างต่อเติม' ? 'งานสร้างต่อเติม' : document.getElementById('subCategory').value,
+    department,
+    requester: document.getElementById('requester').value.trim(),
+    area: document.getElementById('area').value.trim(),
+    machine: document.getElementById('machine').value.trim(),
+    description,
+    urgency: document.querySelector('input[name=urgency]:checked').value,
+    date_reported: isResubmit ? jobs[id].date_reported : today,
+    date_needed: document.getElementById('dateNeeded').value,
+    note: document.getElementById('note').value.trim(),
+    status: 'รอมอบหมาย',
+    assignee: '', plan_date: '', start_date: '', finish_date: '',
+    work_minutes: null, quality: null, time_score: null, service: null,
+    close_note: '', synced: false,
+    created_at: isResubmit ? jobs[id].created_at : Date.now(),
+    approval_status: 'pending', approved_by: '', approved_by_dept: '', approved_at: '',
+    rejection_reason: '', rejected_by: '', rejected_by_dept: '', rejected_at: ''
+  };
+
+  try{
+    const r = await storage.set('job:'+id, JSON.stringify(record), true);
+    if(!r) throw new Error('save failed');
+    jobs[id] = record;
+    window.lastJobId = id;
+    document.getElementById('lastSubmitted').style.display = 'block';
+    showMsg(isResubmit ? 'ส่งใบงานใหม่เรียบร้อย รอการอนุมัติอีกครั้ง' : 'บันทึกใบแจ้งงานเรียบร้อย', 'success');
+    document.getElementById('description').value = '';
+    document.getElementById('area').value = '';
+    document.getElementById('machine').value = '';
+    document.getElementById('requester').value = '';
+    document.getElementById('note').value = '';
+    document.getElementById('dateNeeded').value = '';
+    editingJobId = null;
+    document.getElementById('submitBtnLabel').textContent = 'บันทึกใบแจ้งงาน';
+    renderCounts();
+    renderRejectedBanner();
+  }catch(e){
+    showMsg('บันทึกไม่สำเร็จ ลองอีกครั้ง', 'error');
+  }
+}
+
+function renderRejectedBanner(){
+  const dept = document.getElementById('department').value;
+  const banner = document.getElementById('rejectedBanner');
+  const rejected = Object.values(jobs).filter(j=>j.department===dept && j.approval_status==='rejected');
+  if(rejected.length===0){ banner.innerHTML = ''; return; }
+  banner.innerHTML = rejected.map(j=>`
+    <div class="reject-banner">
+      <b>ใบงานถูกตีกลับ:</b> ${escapeHtml(j.description)}<br>
+      เหตุผล: ${escapeHtml(j.rejection_reason || '-')}<br>
+      <button class="btn-secondary" style="margin-top:8px;" onclick="editRejectedJob('${j.id}')">แก้ไขและส่งใหม่</button>
+    </div>
+  `).join('');
+}
+
+function editRejectedJob(id){
+  const j = jobs[id];
+  if(!j) return;
+  editingJobId = id;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+  document.querySelector('.tab[data-tab=new]').classList.add('active');
+  document.getElementById('panel-new').classList.add('active');
+  document.querySelector(`input[name=jobType][value="${j.type}"]`).checked = true;
+  document.getElementById('subCategoryField').style.display = j.type==='สร้างต่อเติม' ? 'none' : 'block';
+  if(j.type!=='สร้างต่อเติม') document.getElementById('subCategory').value = j.category;
+  document.getElementById('department').value = j.department;
+  document.getElementById('requester').value = j.requester || '';
+  document.getElementById('area').value = j.area || '';
+  document.getElementById('machine').value = j.machine || '';
+  document.getElementById('description').value = j.description || '';
+  document.querySelector(`input[name=urgency][value="${j.urgency}"]`).checked = true;
+  document.getElementById('dateNeeded').value = j.date_needed || '';
+  document.getElementById('note').value = j.note || '';
+  document.getElementById('submitBtnLabel').textContent = 'ส่งใบงานที่แก้ไขแล้วอีกครั้ง';
+  showMsg('แก้ไขข้อมูลแล้วกดปุ่มด้านล่างเพื่อส่งใหม่', 'success');
+  try{ window.scrollTo({top:0, behavior:'smooth'}); }catch(e){}
+}
+
+function goCheckLastStatus(){
+  if(!window.lastJobId || !jobs[window.lastJobId]) return;
+  const dept = jobs[window.lastJobId].department;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+  document.querySelector('.tab[data-tab=status]').classList.add('active');
+  document.getElementById('panel-status').classList.add('active');
+  document.getElementById('statusDeptSelect').value = dept;
+  document.getElementById('statusSearchText').value = '';
+  renderStatusList();
+}
+
+function approvalStatusLabel(j){
+  if(j.approval_status==='pending') return { text:'รออนุมัติจากหัวหน้าแผนก', cls:'approval-pending' };
+  if(j.approval_status==='rejected') return { text:'ถูกปฏิเสธ', cls:'approval-rejected' };
+  return null;
+}
+
+function renderStatusList(){
+  const dept = document.getElementById('statusDeptSelect').value;
+  const q = document.getElementById('statusSearchText').value.trim().toLowerCase();
+  const list = document.getElementById('statusList');
+  if(!dept){
+    list.innerHTML = '<div class="empty">เลือกแผนกของคุณเพื่อดูรายการใบงานที่แจ้งไว้</div>';
+    return;
+  }
+  let items = Object.values(jobs).filter(j=>j.department===dept);
+  if(q) items = items.filter(j=>(j.description||'').toLowerCase().includes(q));
+  items.sort((a,b)=> (b.created_at||0)-(a.created_at||0));
+
+  if(items.length===0){
+    list.innerHTML = '<div class="empty">ไม่พบใบงานของแผนกนี้</div>';
+    return;
+  }
+  list.innerHTML = '';
+  items.forEach(j=>{
+    const el = document.createElement('div');
+    el.className = 'job';
+    const ap = approvalStatusLabel(j);
+    const apBadge = ap ? `<span class="badge ${ap.cls}">${ap.text}</span>` : '';
+    let extra = '';
+    if(j.approval_status==='rejected'){
+      extra = `
+        <div class="reject-banner" style="margin-top:8px; margin-bottom:0;">
+          <b>เหตุผลที่ไม่อนุมัติ:</b> ${escapeHtml(j.rejection_reason || '-')}
+          <div style="margin-top:8px;"><button class="btn-secondary" onclick="editRejectedJob('${j.id}')">แก้ไขและส่งใหม่</button></div>
+        </div>`;
+    }
+    el.innerHTML = `
+      <div class="job-top">
+        <span class="job-id">${j.category}</span>
+        <span>${apBadge} <span class="badge ${j.status}">${j.status}</span></span>
+      </div>
+      <p class="job-desc">${escapeHtml(j.description)}</p>
+      <div class="job-meta">แจ้งเมื่อ ${j.date_reported}${j.assignee ? ' · ช่าง: '+j.assignee : ''}${j.approval_status==='approved' && j.approved_by ? ' · อนุมัติโดย '+escapeHtml(j.approved_by) : ''}</div>
+      ${extra}
+    `;
+    list.appendChild(el);
+  });
+}
+
+function renderCounts(){
+  const pending = Object.values(jobs).filter(j=>j.status!=='เสร็จ' && j.status!=='ยกเลิก').length;
+  document.getElementById('pendingCount').textContent = pending ? '('+pending+')' : '';
+  const unsynced = Object.values(jobs).filter(j=>!j.synced && j.approval_status==='approved').length;
+  document.getElementById('exportCount').textContent = unsynced;
+  if(isDeptHead){
+    const awaiting = Object.values(jobs).filter(j=>j.department===deptHeadDept && j.approval_status==='pending').length;
+    document.getElementById('approveCount').textContent = awaiting ? '('+awaiting+')' : '';
+  }
+}
+
+function renderList(){
+  const statuses = ['ทั้งหมด','รออนุมัติ','ถูกปฏิเสธ','รอมอบหมาย','กำลังดำเนินการ','เสร็จ','ยกเลิก'];
+  const filters = document.getElementById('filters');
+  filters.innerHTML = '';
+  statuses.forEach(s=>{
+    const c = document.createElement('div');
+    c.className = 'chip' + (s===currentFilter ? ' active' : '');
+    c.textContent = s;
+    c.onclick = ()=>{ currentFilter = s; renderList(); };
+    filters.appendChild(c);
+  });
+
+  const list = document.getElementById('jobList');
+  let items = Object.values(jobs).sort((a,b)=> (b.created_at||0)-(a.created_at||0));
+  if(currentFilter==='รออนุมัติ') items = items.filter(j=>j.approval_status==='pending');
+  else if(currentFilter==='ถูกปฏิเสธ') items = items.filter(j=>j.approval_status==='rejected');
+  else if(currentFilter!=='ทั้งหมด') items = items.filter(j=>j.status===currentFilter);
+
+  if(items.length===0){
+    list.innerHTML = '<div class="empty">ยังไม่มีรายการในสถานะนี้</div>';
+    return;
+  }
+  list.innerHTML = '';
+  items.forEach(j=>{
+    const el = document.createElement('div');
+    const isApproved = j.approval_status==='approved';
+    el.className = 'job';
+    el.onclick = ()=> {
+      if(!isApproved){
+        showMsg(j.approval_status==='rejected' ? 'ใบงานนี้ถูกปฏิเสธ ยังไม่สามารถมอบหมายงานได้' : 'ใบงานนี้ยังรอการอนุมัติจากหัวหน้าแผนก', 'error');
+        return;
+      }
+      openModal(j.id);
+    };
+    if(!isApproved) el.style.opacity = '0.7';
+    const approvalBadge = j.approval_status==='pending' ? '<span class="badge approval-pending">รออนุมัติ</span>'
+      : j.approval_status==='rejected' ? '<span class="badge approval-rejected">ถูกปฏิเสธ</span>' : '';
+    el.innerHTML = `
+      <div class="job-top">
+        <span class="job-id">${j.department} · ${j.category}</span>
+        <span>${approvalBadge} <span class="badge ${j.status}">${j.status}</span></span>
+      </div>
+      <p class="job-desc">${escapeHtml(j.description)}</p>
+      <div class="job-meta">แจ้งเมื่อ ${j.date_reported}${j.assignee ? ' · ช่าง: '+j.assignee : ''}${j.urgency==='ฉุกเฉิน' ? ' · <b style="color:var(--urgent)">ฉุกเฉิน</b>' : ''}</div>
+      <div class="job-actions">
+        <button class="print-btn" onclick="event.stopPropagation(); printRequestForm('${j.id}')">พิมพ์ใบแจ้งงาน</button>
+        <button class="print-btn" onclick="event.stopPropagation(); printWorkOrderForm('${j.id}')">พิมพ์ใบสั่งงาน</button>
+        <button class="print-btn btn-danger" onclick="event.stopPropagation(); deleteJob('${j.id}')">ลบใบงาน</button>
+      </div>
+    `;
+    list.appendChild(el);
+  });
+}
+
+function renderApprovalList(){
+  const list = document.getElementById('approveList');
+  const items = Object.values(jobs)
+    .filter(j=>j.department===deptHeadDept && j.approval_status==='pending')
+    .sort((a,b)=> (a.created_at||0)-(b.created_at||0));
+  if(items.length===0){
+    list.innerHTML = '<div class="empty">ไม่มีใบงานรออนุมัติสำหรับแผนกนี้</div>';
+    return;
+  }
+  list.innerHTML = '';
+  items.forEach(j=>{
+    const el = document.createElement('div');
+    el.className = 'job';
+    el.innerHTML = `
+      <div class="job-top">
+        <span class="job-id">${j.department} · ${j.category}</span>
+        <span class="badge approval-pending">รออนุมัติ</span>
+      </div>
+      <p class="job-desc">${escapeHtml(j.description)}</p>
+      <div class="job-meta">ผู้แจ้ง: ${escapeHtml(j.requester||'-')} · แจ้งเมื่อ ${j.date_reported}${j.urgency==='ฉุกเฉิน' ? ' · <b style="color:var(--urgent)">ฉุกเฉิน</b>' : ''}</div>
+      <div class="job-actions">
+        <button class="print-btn btn-approve" onclick="approveJob('${j.id}')">อนุมัติ</button>
+        <button class="print-btn btn-reject" onclick="openRejectModal('${j.id}')">ไม่อนุมัติ</button>
+        <button class="print-btn" onclick="printRequestForm('${j.id}')">พิมพ์ใบแจ้งงาน</button>
+      </div>
+    `;
+    list.appendChild(el);
+  });
+}
+
+async function approveJob(id){
+  const j = jobs[id];
+  if(!j) return;
+  j.approval_status = 'approved';
+  j.approved_by = deptHeadName;
+  j.approved_by_dept = deptHeadDept;
+  j.approved_at = new Date().toISOString().slice(0,10);
+  try{
+    const r = await storage.set('job:'+id, JSON.stringify(j), true);
+    if(!r) throw new Error('save failed');
+    showMsg('อนุมัติใบงานเรียบร้อย', 'success');
+    renderApprovalList();
+    renderCounts();
+  }catch(e){
+    showMsg('อนุมัติไม่สำเร็จ: ' + (e && e.message ? e.message : 'ไม่ทราบสาเหตุ'), 'error');
+  }
+}
+
+function openRejectModal(id){
+  rejectTargetId = id;
+  document.getElementById('rejectReason').value = '';
+  document.getElementById('rejectOverlay').classList.add('show');
+}
+function closeRejectModal(){ document.getElementById('rejectOverlay').classList.remove('show'); rejectTargetId = null; }
+async function submitReject(){
+  if(!rejectTargetId) return;
+  const j = jobs[rejectTargetId];
+  if(!j) return;
+  const reason = document.getElementById('rejectReason').value.trim();
+  if(!reason){ showMsg('กรุณาระบุเหตุผล', 'error'); return; }
+  j.approval_status = 'rejected';
+  j.rejection_reason = reason;
+  j.rejected_by = deptHeadName;
+  j.rejected_by_dept = deptHeadDept;
+  j.rejected_at = new Date().toISOString().slice(0,10);
+  try{
+    const r = await storage.set('job:'+rejectTargetId, JSON.stringify(j), true);
+    if(!r) throw new Error('save failed');
+    showMsg('ไม่อนุมัติใบงานแล้ว ผู้แจ้งจะเห็นเหตุผลและแก้ไขส่งใหม่ได้', 'success');
+    closeRejectModal();
+    renderApprovalList();
+    renderCounts();
+  }catch(e){
+    showMsg('บันทึกไม่สำเร็จ: ' + (e && e.message ? e.message : 'ไม่ทราบสาเหตุ'), 'error');
+  }
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
+
+function openModal(id){
+  currentJobId = id;
+  const j = jobs[id];
+  document.getElementById('modalDescLabel').textContent = j.description;
+  document.getElementById('m_assignee').value = j.assignee || '';
+  document.getElementById('m_status').value = j.status || 'รอมอบหมาย';
+  document.getElementById('m_plan').value = j.plan_date || '';
+  document.getElementById('m_start').value = j.start_date || '';
+  document.getElementById('m_finish').value = j.finish_date || '';
+  document.getElementById('m_minutes').value = j.work_minutes || '';
+  document.getElementById('m_closeNote').value = j.close_note || '';
+  stars.m_quality = j.quality || 0;
+  stars.m_time = j.time_score || 0;
+  stars.m_service = j.service || 0;
+  renderStars();
+  document.getElementById('overlay').classList.add('show');
+}
+function closeModal(){ document.getElementById('overlay').classList.remove('show'); currentJobId=null; }
+
+document.querySelectorAll('.stars').forEach(box=>{
+  const target = box.dataset.target;
+  box.querySelectorAll('.star').forEach(s=>{
+    s.addEventListener('click', ()=>{
+      stars[target] = parseInt(s.dataset.v);
+      renderStars();
+    });
+  });
+});
+function renderStars(){
+  document.querySelectorAll('.stars').forEach(box=>{
+    const target = box.dataset.target;
+    box.querySelectorAll('.star').forEach(s=>{
+      s.classList.toggle('on', parseInt(s.dataset.v) <= stars[target]);
+    });
+  });
+}
+
+async function saveClose(){
+  if(!currentJobId) return;
+  const j = jobs[currentJobId];
+  j.assignee = document.getElementById('m_assignee').value;
+  j.status = document.getElementById('m_status').value;
+  j.plan_date = document.getElementById('m_plan').value;
+  j.start_date = document.getElementById('m_start').value;
+  j.finish_date = document.getElementById('m_finish').value;
+  j.work_minutes = document.getElementById('m_minutes').value || null;
+  j.quality = stars.m_quality || null;
+  j.time_score = stars.m_time || null;
+  j.service = stars.m_service || null;
+  j.close_note = document.getElementById('m_closeNote').value;
+  j.synced = false;
+
+  try{
+    const r = await storage.set('job:'+j.id, JSON.stringify(j), true);
+    if(!r) throw new Error('save failed');
+    showMsg('บันทึกผลเรียบร้อย', 'success');
+    closeModal();
+    renderList();
+    renderCounts();
+  }catch(e){
+    showMsg('บันทึกไม่สำเร็จ ลองอีกครั้ง', 'error');
+  }
+}
+
+let lastExportedIds = [];
+
+function exportData(){
+  const unsynced = Object.values(jobs).filter(j=>!j.synced && j.approval_status==='approved');
+  if(unsynced.length===0){ showMsg('ไม่มีรายการที่อนุมัติแล้วรอซิงค์ (งานต้องผ่านการอนุมัติจากหัวหน้าแผนกก่อน)', 'error'); return; }
+  const blob = new Blob([JSON.stringify(unsynced, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `workorders_export_${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  lastExportedIds = unsynced.map(j=>j.id);
+  showMsg(`ดาวน์โหลด ${unsynced.length} รายการแล้ว`, 'success');
+}
+
+async function confirmSynced(){
+  const targetIds = lastExportedIds.length ? lastExportedIds : Object.values(jobs).filter(j=>!j.synced && j.approval_status==='approved').map(j=>j.id);
+  const targets = targetIds.filter(id=>jobs[id]);
+  if(targets.length===0){ showMsg('ไม่มีรายการค้างซิงค์', 'error'); return; }
+  const ok = window.confirm(`ยืนยันลบ ${targets.length} รายการที่ซิงค์เข้า Excel แล้วออกจากระบบ?\nการลบนี้ไม่สามารถกู้คืนได้`);
+  if(!ok) return;
+  let deleted = 0;
+  for(const id of targets){
+    try{
+      await storage.delete('job:'+id, true);
+      delete jobs[id];
+      deleted++;
+    }catch(e){}
+  }
+  lastExportedIds = [];
+  showMsg(`ลบข้อมูลที่ซิงค์แล้ว ${deleted} รายการออกจากระบบเรียบร้อย`, 'success');
+  renderList();
+  renderCounts();
+}
+
+async function deleteJob(id){
+  const j = jobs[id];
+  if(!j) return;
+  const ok = window.confirm(`ยืนยันลบใบงานนี้?\n"${j.description}"\nการลบนี้ไม่สามารถกู้คืนได้`);
+  if(!ok) return;
+  try{
+    await storage.delete('job:'+id, true);
+    delete jobs[id];
+    showMsg('ลบใบงานเรียบร้อย', 'success');
+    renderList();
+    renderCounts();
+  }catch(e){
+    showMsg('ลบไม่สำเร็จ: ' + (e && e.message ? e.message : 'ไม่ทราบสาเหตุ'), 'error');
+  }
+}
+
+function fmtDate(s){
+  if(!s) return '.........../.........../...........';
+  const d = new Date(s+'T00:00:00');
+  if(isNaN(d)) return s;
+  return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+(d.getFullYear()+543);
+}
+function urgencyBoxes(u){
+  const opts = ['ฉุกเฉิน','ด่วน','ปกติ'];
+  return '<span class="pf-urgency">'+opts.map(o=>`<span><span class="chk">${o===u?'&#10003;':''}</span>${o}</span>`).join('') +'</span>';
+}
+
+const LOGO_DATA_URI = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAUEAAABLCAIAAABhgKK0AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAgY0hSTQAAeiYAAICEAAD6AAAAgOgAAHUwAADqYAAAOpgAABdwnLpRPAAAAAlwSFlzAAAh1QAAIdUBBJy0nQAAHolJREFUeF7tXQeYFUW2duYCEkRQJChhMbtrwrjGFQEjZtfEU1F4q7urmF0x66qIEdSnCBhW9z1zRkH5VsUs5oyCOaCIIqiAINR5/6nU1d3V4d6Rmbkz3d/9YOZOh6pT5z/5VNcQ0XLFUVCgoED1UgAYLo6CAgUFqpcCy1Xv0IuRFxQoKMB2dEGFggIFBaqaAgWGq3r5isEXFCj0cMEDBQWqnAKFHq7yBSyG3+wpUGC42bNAQYAqp0CB4SpfwGL4zZ4CBYabPQsUBKhyChQYrvIFLIbf7ClQYLjZs0BBgCqnQIHhKl/AYvjNngIFhps9CxQEqHIKWAwLoWeC/82PDTa38Bh4aOlDyjyh3Cml3DD7WQ1EtjyrFjknz1yWMvHldXke0EBzb9aPDelhvVISzg21YJJf1MPdf72LlHmCvcrOJs+0IgNwHx08Mc+N6oGzcg/DyujQoHJcXhbp6mHGxSOiFACGnXX87FMaNYr235+22Ya2Vp+tG+Czzba0zVbUtx+dcKJ4agr9slAOMs5vEu/33EsjLqKLRtBF+DfhM3o0ffVVXrl02+18wxEjhOeeI/A9/3X0NWL27EbCTeKzz+jKUWnTx5g//MhKxYCOc+bQ2HE8oxTSPfiAlqp+IdBIaNCsh2ExLOjNN2j77allK6qpodpaqsW/NfxzA3zwdP6ImlrRqRNdcAH98kvCKgmx/358cvogu3alqVMpHxeKnXfGxPFo4k9k+rVCPWu11ejddxsH4wia8hSt3CmNAhjzxEeMFHTM4o8+pPXX903TmfVhh+aVfY2DHM1wFMqWFrRgAW2+ubOcEkUNgF5wjwawHkxtidqvSHfemYRhAob9eHMYsWs3mvpSXl7caSdDhziMFU1qadVVGwOGtUZ9SmE4eb2wlI9MdNwT46d89JHEcKqYPvQw0K1whxuzaDAYvu22ikALvcQcILUW/i0ZhlA4tL9Kxa6QVp5oMPfZdNNEIu4HDGcZC9DDL03NuwyM4awbNg4M6xkxhlfO0MOPPOKZfi4MQw8XR6OmgLSlIWb/9jcJuTJ0L+NWo1SBs8R2eK9eon9/GnYsnXQi7bUX9V5dtG4dqFacUx6GJZZwSevW4ttv/YQsMFxguFFDbJkPTselxZChEmlZ+sdVUEa1sosIcEIVIDoyY4YzZEGfItxyOXXvnmydpj9R6W2WDiJ0Z+chBYYLDC9zmDTqB5jc0tAhlRi6rLdL1KIFwf6c/oGQh/SvbQ5GiKWCgQ1nWyvhMlS9Nb9Fq5b0oSsdCgw7FCgw3KghtswHZzE8tGwrV8WugeFBgwjpDX3Ec7YyIDrtXdpsM2l+l4NhfXKJMTz9w8KW9lPg2WepZ09q3z7xs+KK9NijhT+8zMHUQA8wGB4CPVyOIa3Cs8DYBhvQFxLASvcuXUrvvE2jrqBrrqbnnncUMtHkydS1m3ADXfmf2LIlzWj8GA6sD/9qmsysm+k2NS22rgZ0tIVpkQsiGXKVLRLiu+9o0iR66KG0z6xvPGH53yamlVThFxqtHmuILkEtDU+Z580MFCWdIYax8VKAEqZrwJSWtq6eiSub+J0leYMyQadIIXpLeW0ofZcGaCfO71LPvSSy1s7dYzeuA4YB4C5d6AUb7xU0c6Y47DCByJYKj9W2oIMPpC++1MRcukRceGH5kkJKlmrAsFD8Fyd+yEKxjoY5VbOIrmd0+CDCZIn3zZMzk9wVYEaP6LfBsLoZ316P2DvS2JfG7TKXJ3Cpy+459Fw4DSYx6IOXGauLvODuvI56vB5BpAeaUG1gL0hZL2fK4ZJE92JXuKdPvA4YRgHGoENoyVI9jO+/FwN3F61QImLSqgB5qQXttSd9AyUgjy++yMiCJGnmasCw4ZVMTjM6yeWChb8Q1OmXX/IHOnPBfCPVtcBP5YhMdokIeHN+nTEs+UxpzjDvLvmVfvqRkEpQM7IfzPHHebRwgTMgbXcYQZcmArPm6Uo9g0GxlH78kWZ+pcfw3WxTL2RWwb9c8q+oLPr+e3Wh+Ppr+vnnsIiOiyULTldGeB5gpalDOvndr7/aJ9K3swQIpdff3sRDgzpgGMVMp5xqBDzR+PGseLUHa2ohgGcUWj35hF7jeXNpzTUrUcXVgWFB8+aJd94l/rwT/rzNv777Ds35wTCrVBHg9Tfeon+eT38+gHbckZAGxwelpvvuT+edR++9R4sXa4PZy2pqgef/RNOm8c2TP+Knnzw3qDOGtXbnUSzloX7yCd1+G51+Oswx2mMPlP2JzTalTTCpzYh/2IT67ki77yH+vB8dfTRdeil76ShZXbLE8HSYt/WIjYz4YQ7X1UQJ69B57tygHAXj+WGOQNXDscfQwD1oyy01bfv2pUMG0cUjxAcfsN+nrYcwMJYsQYCWLrmMDjqQ+vfjCzH4P25Ne+1DZ55Jr74qcELc5g/oK+/2809pQ8VKQZwpwcdCbCnT4YabxRGDaUc8cTPadBPablva/wAxcoSY9h7zSbKBVwcMA5+nnmokj6CrRlGJTWhdjWjALFZamf7zHz1BYHiNNZoyhu++Wye04waF8i9uukkr2KVLmCy77CKJZiIRbm4PIrJFS9pnX3rhRckxXv6WdEWtJQRlSnCB67QeNiLf4dffBMO478cf0YUXiI02MCaYrbTT8+JCoHAsUxUF8Zdt29HAgTRxkqyKTzwYa/+6mZZHrUFy1ObWWzWjAx6XXEJduuqTFVV1KlRdXksrrEBDjpSxWIcggNPrr3NdgypqMOUSpvBWfgNLc+dd6JVXWQQk6XDcZ9KjqStSotGjtbKGhj/jDFqls6SS5QRVayyHjSfusSe9/lrSE+uC4RqLYZ4L+gq8MeeOKwUYnjuvSWOY6O67vCvHhd+KIRjDRNCKZ59DXbvIQH1qKBHI79GDUGXFkjjhqN/cktIdmvUxkRtvoLXW4vxi/ghl/MwOHQiRlA8RtnRFVVg93vwvWn75VAz/m4f28ksEZdsq9Uw1ADh6W23Nxos6Fi6kW24VvXqkpk4YxqylsChotvkVVpKlRni0iDKmS1XgBVB/b5rYaqss6knZ0bs3jb2eFqNxIOy2BO9qqSQuXWA4BqpkDEtVUEM33sxW1mmncZROrTEckDTul+uHIpnnnkv0BusXw9ZeFQsXipNPoXYrlJ0yjM7X1PnBeuT4OaPCCc4bImdj+BZ65hmx9trZ9fNKFTPxS7T77vTVl+yIXjxSdETJqmMWeddFduPwUvbsRVOeVIjyLE0eDEN8bLFldnGkSuWoMqqbbiZYcOGj0MMxHNalXjoBw9p+A9+MvopOOF7qXhsyyEjpSd+kRDvsID0o31GfGJYcy7oStTunDzchTDudctOTSorZRpcSHXgQB8PUEUFGJoaPOop69ZbkijereAdmYAzn/KwzCZ6LLnnInIWpcYCHDxfAi+JMDJ98EgcIQhZ+0nOdGbVtJ7DcQRyC6VRguD4wLLPi0h/uszH7WgGfZVW8yDPZU2rXXtx1V8NjWIdhiF59mV1Z5SPkYsRkYFjkcGH88sZ1j4E4E8Nt2qiWVags7bkkGjiSpOpknNO6DayJmM+cMGDjtbJ/hKVEDM+bZUrHMB7afgU25nOKG0VhOS+BBuGZM92HlolhBFq0DpHz55iWys0Ljz+snPKVHH94HvxhFZc2YY+cZVvVEZdO9IeNtewgVk3cKuRAM4dZJ4jz19JBBzuqyVFS9amHlRRZ9Av95S8xI9CxLOyyIgrVsQOH3Dqtwg2SbdvK5rZUyYWQ0uLFHus0E8PonJNkVKrYBNLy2Tshy0h142WJV2bjEh18kEwExo5MDNc4giZul2n54hsDahZHXek+rzwM8wIAmSYMg9ySDUIIWImaL03IUckYGdPSgRDGMOLSKsCT0+CpmhoPJmuaLe2AU5nHigksKaxacLWHkZhMMQRaQ5lVs471i2EW2R+8L3r1MkpPAkZrY1XbI2V3m9Yc4L3zDmwzIlTsB/nViRNpwACduUhSkr/rLd580xOHz4HhkG6QiQDZkGMCiklPlMuBM7UdzorKCQunhaZKtPrq9M3X5WNYxTItCgAro9ikvg3naCMWQS39fn2abVJTFdnSBqKwQC69xHgtrIdFSYsNDXWpb8XKK9HjwLBJmvXvxyaEDQzkknbVUadVBoYVo4MOMFJQ52wTLV65pu2oWt4L4a23DLs0oB4W9MAD0jswVrS1pRXzKTV4xpmEVGL0ENy7gvrtFGC0aiX+738rwLDOxEg1w4RdZx1atbtJ3aUrVaW3JaLgFSPmvNba1KFDtsmggttI48fd92w9HPTk0cYb06GH0nHH0667UJfODoBNptaSS1nybdrSLbdY0panh1UiRCCl2bkzjRxJs78NrDvWwy2MiNWpLaZCYEvLWOPHH9OQIQKrmNdcaYp6uNSS0GWNhOfTT9PjjwuUc/TqmZjSYDUCviyJtm1pctC6EIC4PvWwMqjQiHbddXTmWTT4COrXj3NL3ValTp1pxQ5sLSOvs+669PVMG+uRvpYMhKnCUuzWloxhtvLOP9+Dijx6GCq0fQcaNoyeepref59efIHOOgtDSs97Be5h9x50+eWo4kDKh8v7Oetj0gf+ATPGxKOPlY1hq3XhUQ8/jdPUXHAiOL81ebJA0MQ2+UWdTWO9Hnq4DVCXg2ElekstRP8BnIVDZNLW+qJy5fzzrR6We3FpP0Ss2J4mPBQSqyjogSD//R+UxZIrr9hE/GEpj5BKPfgQThG7udBXXxMAQKwhRDsdyn9BIfq48R5HsT4xHArg2ASQQFWggHRGB9W999D119OECai+MuFTlfJVA8eZ82nX3TLSaYP+i/EeCUxnY1h6KNddS4sXBeYhMjFoa09PLKsAzaqr0WMSjbbJ4dNP5QZVaWFqXqBx4z1WQ5YeZuYHlI49RtMl0OTY2e5N0Q3dQaxyrd9qh6Ht/FVWkdPkIwvD1pCTqoBW68EbX6KINGjmIPryCzr51KUdO/oBiTv06En/vhV1iEZcSXn87Sw66WQOdWiTTKUZjKEe2VQkHcPGP08kd73txZPoD1vPp5bWXIO++FySAq3Vks8V3xw5JCOOAiIwu8SOesVw5OlJSetwrBa/oZZwypPinHNpww1ZUacCg4Dh+JGN4RrWnIazAxEA13F1RGFSM0bgtzNOV3JHHfpyVGsyf5pdIr03ufY6z2jzYHi99bg6NX6AXKf+I1m9afdevP5GmRiG0t+xLyoNzDylZF20iJ58krbeFuVg4RLLGL1Q2oaFgTunM9TSzkJuDUEOZMm44MEJcblb/CiqpWF4f5N9TV6kRoJhJRD//ncry5zlE1yF49ZdxtmlUWJYgliXggaAhpCeP59mzRJoREVZwtChjC5U3SqNlxkEqQzDqJa54oqQSrTW/J+2T62akgbmK6+4KWltY6IMA3F1VWLhKht3dSrDMO6Gym1Zs+05UIfL/mY8hm8iiHBpsYmyPPLoYVkgcvkV9MNc5dgoEYUNlsWZZ7AFaEtbkgxjE/MQPXuIG8Y7G83K+0FCDx/O4Wtz+VKVTZXV15r0KRjGbtjpIhZ/bXAM69CoDFEw6T2ltmLiRKHYJenTCDEcMnhl2w28UOSxzz2P9t2Po0qycIKjTRq9yxLDKNh8+OFIF4MGyJ57pTJJiX1mbpkwOtj+MH06rdbdRMsSEk4VYFiyurjuusT+JpBxnfU8ws6KElB15MV5MFzLjsRuu9Frr0r1axwbOLSPTaaN+0A9wl4PubXGDY6RTEX5S3xD1PG//HKoDAe5B2j4fv21IoonA5IxLParBgxrN6GWMy5PPCFNNaOMjaPIJgkLxKrCMCYB3KKXCF1rSF/36IVwLhexcOrB1SGSZd2yimVhSyOu9pLagdjqX6Y04wRZrrQUUY1AylO3dgWN0LxCM6YLhKkTuVouVoUYrqW775FWe1wRC34DAdrXbAeRO3jrJB9zTBaGMW7swHqxDD5HDni2eDxCF/wZS9ePMT+rb64X+k/61/CXY2jsWEIoj7vqAmbmmaBWFl14IFlIbKfY0tIpP/zQbD3MexU87zNZfN+hBzBTsWOQaPeLHyn+sDJGOndJ3CUX27gDAFWEYbTXTn0RWQbO+XP8VibMdLohvC2xTT7lMaRBgcpsabBrRDcYrzYDwxjVmmsFNZ4OVxL0cPfVbCI3HmGqE4anvpDIkwg5bbddQu7G0Bl9V15bWifrSyXxpx3opZeFdF+TAhcGhKl/19c74bd0MD3/vEALpUkzSlekhv3tGdPjA+GbDj89O7i9Qnu6777seeCMXxeLNdfURIiHypDgkXaH2Ghj+lzFpcJHZo0HcnKsK3xHdelhOHJnn0UrdVT8HcTPVQRIJWntzyaTzClxFOph969loYdX7SYx7DsybOkaHpW3xVra0hmjrUQPyy3Zn3g8CGpGRg0Mb7udY8O7BULSOQcfYi9ajWEFLtu3BNKjSwYFG/N+VFZFGkBZD2YBOICONnKy9KHcPwHut6rKZDBzWiVhb1rBEe+sGAnT6+xzrCMfG4DTJAOvgXtxVdI/btaq8p0S9+t7OxCaCYbnLyCUcKjcqfteG1U+wDazMqRlfS9+hfUBlXDKKfTkFK5MPOCAZo5hzVp33pmAYcE73mDvAc/mczplywQEZl09LBjD8NbacMoeigJOjs55GIaPQdUGt9LVtNXV2Vh3vETeKgHD2HcfrkfHwJAaZT0cOeQtX3kZXrTfyHGFPSRCsM9D6D7BwGB0nHsO5281en25a/WnwYP9Db3NBMMPT+CiMWUY28IsLUlNJgYhSbgwu+4mxowRkIxw8Ky4x/4YzVwPqwjfiAsT9Rleftbrdz4D0yRfIRzPPTuKYY45rdKJd1E57jiBsq9hx+EHOm6Y/Dfhg20rciA4OAets/q2yffEo/E4dRqawlAoj4EhpuXZX1qaAXO+ly50djEdXfhPTob5JQG+lXs4dOumjUAfk+n4KsZz9TV+6jd5DENyw0oaMECpCJNQdEosVeQSpgp2F0LJR2TrAiUvEbJu9hhmrYNaKXSPeBAk6MH7ZV1KNA/HrpwVnddoJnRzSwritjMpIZJuqY/V2qQPbzjm1nv4WVvGCXE882xmjzVwEt7dQtvS4TdIqMdI4xxJ5kMONq5XApKVQY4eGliA2BUtrs+h9h96SCAXEuItXyZTCZQZH/iFV9PHsGD7CNEjnStyTLvgm1rac29mjOBwoyEie0+1CmNa1eMPKzZDrZV+l53lZ/kD9plkMaciC+FP0BpRIx7XW1xl5YfT5SXq9e+8I7r9p1tC6K4icALVmhny9Z7gzy3pIly69lrec0g7sd4SAmOBtGqNrerpqqsEEvrY92z6DM6L3H8fsu2iS1fTPp6Y3dGvmNp2OxNUj0mDJo9hzBjGF3cOR6kU9P3BI7tdlx+E4iUKyLASebeq1Kqppo9h5YaUCMFRFJ+7W3Mhz3rjjbotxNtToEqpoaVNRKZuGMYzNtpI7dlp9FKy2zttmlgbYap0ozdhaVNqPPDkmV9yOacNZftnrsJUKoiKFzi1ZLO5u3w9guPUZYsY8N/4cXa2URA3fQwLGne9L9ZiSmXBYe3a6cJjW1BgxTp6J//618TLLbCbPoY5WKusYrHOuqyEsP0tmAlBHwRfOcVoE3URRJgsAPa+5KAVH3XBsNJ4tXT44SpcZJEcwTH/+v13vFmpp3YsVR7bRU3EsHnURSPMrpo+F8BUfevspU5+uLs9RGzCpFHVIuKPTU8dmRVGcXPAMNL7fi1qpHOppTj5RLNfnHF5wB6IXCDMkVTM596zyWNYtyW1CPoludgxwpDKeAzt7yUjMnLb9ktG2hhhHTBsy76gmg44kLPh3vgWvGWkUhEqAw65wfg31MOOrMAjsJuxaqmPc4ltpbD7SwbRAoveHGNDgA1Z3EQE59gDoAnkh/FSGDZefGJOmUL4dOjIdT6ffooMJc2Zww2nEyYIJOTwDlpfL070bk0fw7LqwbRbO1uOmKh+YBuG6CyVUAnZX/GGbnhQelgiYejQrC2IklWTet6669Fll7GTiQIs2PRQ9Phh1iwaM4b+uJWn9CqvYyzTjCnvPbSK8NlnPC+RkA1c2RZyNJSl4moa1XqHByRL0IyKqKx2HHxeQ9PXw8QFatgn1aWqV7XCYdtgfRq4Owex0U6suv80SV256VudQYNULUGIxJl9S1VU46ECt564oDeOZYGtaFUS2AjJcaGNHsaegEFBXLlMr3wh6WpDy6M2bYONBBov14L3m3vXryS5rip+kB/+2rzwJRZI0l9A4aP/Ey2QVsem9JokShBVxRFRzhxCEMOOMW9dSHSHs/fiqXY9LDMMdNTRvI+HKeRwtpVJ4RxbhqloKy/3S9ha2mlAHMLUtDBsozPZ0QEbrFWysk+fSMficro+HDXrWipUBGAlYo3bqSSu2n2iQuM5wJhUhsj64H0W6QfYC2/9uOcewc2iIS1alh62AJZNGux+CDROHn+86dpPTYg3aT0cKMa332bVqhOVVrumc46KxELKl/AmGqEKGEJq2V5eS2uvpXtUXUXc5DCsdzjNCBCYIJba7qtLN1ZUWglr6ig9LLitH7ucVeasKvDbpt9gYWwRT6VyQQls+Nu6LzQVxEpFAOpTplCfTQmRFR05KPPpbsEg5oJeov+5xryvyJUjzdOWlhTAKyyxUweq0JWo5RXPFNYSwyu0o2HHYj830XfHeAGDuhs7zIhs431IkaNpYZg1HEziXr2zQWeiDKJrFyT2sLN3xMkwtjToNfkx9nPyuqleYCiZoSLDOnZlekfLBJIbkT7hBJq/IEepZnAKvzAOO7BsuKGuvy9jUtL9VkzZYSU6fDDveOYrYvGPp0nrYeOzKDtXCGxV8Yf1s1nQEh+Zee48kceVozRiY6VI/D0qsS8eEX29UFPCsMpx3nsvvfE67dA3bdcu1bAJbuw3AG/ectoXgkYFB8OowUDBA/YT23YbLoSAQ7sZPnhjXQWfii80z8XT8RqLPQaKu+4ONYVl2NPOnzGdr2bSfQ/Sfw+hLbbg/jjsI6H28mfVoT42SG5MBuz+tfY63NJw6WX8+sIF7ls2M58t+M1SmnQxoil6orwORPYe6KBGY0AKtfHyvvvvV5fqPb3VL6+9xgNOuRCPRsAvchXugU2U0H6Qvr4I49kHRobNOxx+QhdcyK8FxBYOkqqRwnWBahBQfuBAAWcNr7DV21YIeHQCfenMYHFWwTdbyITlD9Yr5vliVza8HilltLvszC9GDA4nKHbiiRnT3HtvwsYj8eOzz3n3L7V2m28RuwkPVUBwKxK5R9ZePEwuYBgH4vbjxtL2f+JmG+17Gm7Er51X4XTm1VdzRUdCf5GDYT0CId8cO5tmzxJ4f2zDfGZzDzQGzfsSa9Lk0MMuCR2djK+RncamME88wXpg3DhW0cP/IbAnI1oXjjiCPyecRCMvJbw4D7sZYgsFQLfM52mEIGoN0vEnRDpJyVn8pZ6Uh1sESmdRB5pCcGycgn0PlQ50WRU7SKVfiHsuWmToaPb0xx0g5pCzTV9iJIfiDBoCCjd+C9AWbeTYj+WII+mIwQIkxTulRo3mt71BFOpgvnsZ3vM6Vz7aO+XZ7Nxx36uDQ8wdXJEyWqatfbOcoZCilX5WAj/P/lbM+S5MVDNUkAi3xQl4bvzpaK3H+PUe8ZViWD1q7lx+CQsqtE4DDQeLwUfyllpjxuINUqYeIZEl4xj2sFf9fqXTCg5JcvQ3xoaoLjc7b0bEpHND/aPeX8jwqye1kY8ImdD3nGDZLfWttur5elranLViN+11uMGFvkbSjEihc0nyqzoTiG8erAIV7qHliKRyjCDx051VSV0FdaW9IX6wrmOedfE+2BEivmeHH+eckV8Pa0EVZ3I1fnskTqERYjhhmTJXwU9i9S3TQt7AXZJgsR0UVfQYzWSS4ok3CO09FR6samCODM8zH0fSmPPzXaizD+oRoRGmjMoMQIYDkuniYEb/6ILBA2AzU3XTRJCo5lazammUdQbqApgvsWTKBH/KSBzRGb2N1t5x8pSD4fDSRzjBrldiK78fw5UzciqpKvhj3UYS5tboKlliWf7QzCpZK333g4qnkjChAIppdw7cYAuNfBc6oiU+gHQaKxA5UAoGGMZnFsrN2e553msiX+plKnM9pGgwMiL3tb7xpF5s/hiTROVh2E8Tx4pME3bVo4crQE1xSUGBhqJAeRiu0ygLDNeJfMXFBQX8FCgwXHBGQYHqpkCB4epev2L0BQUKDBc8UFCguilQYLi6168YfTOnAMLMj07KKluulXVadUu8SDoXMa1mzm7F9JcNBSY9loFh1FGqWss6HwWG60zC4gYFBeIUmDmT7rg9+XMHbxuIjeD5qKsqLjBcMGBBgd+KArpGKAcuVU1IrDKkooEUGK6IbMVFBQUaDQUKDDeapSgGUlCgIgoUGK6IbMVFBQUaDQUKDDeapSgGUlCgIgr8P+/JIrJp+ZALAAAAAElFTkSuQmCC';
+
+function buildRequestFormContent(id){
+  const j = jobs[id];
+  if(!j){ showMsg('ไม่พบข้อมูลใบแจ้งงาน', 'error'); return null; }
+  const isBuild = j.type === 'สร้างต่อเติม';
+  const formCode = isBuild ? 'FR-MN-06' : 'FR-MN-05';
+  const subtitle = isBuild ? 'ใบแจ้งงานสร้าง/ต่อเติม' : 'ใบแจ้งซ่อม';
+  const html = `
+    <img class="pf-logo" src="${LOGO_DATA_URI}" alt="Unilamp">
+    <div class="pf-top">วันที่ ${fmtDate(j.date_reported)}</div>
+    <div class="pf-title">WORK  REQUEST</div>
+    <div class="pf-subtitle">${subtitle}</div>
+    <div class="pf-row"><span class="lbl">แผนก</span><span class="val">${escapeHtml(j.department)}</span></div>
+    <div class="pf-row">
+      <span class="lbl">ผู้แจ้ง</span><span class="val">${escapeHtml(j.requester)}</span>
+      <span class="lbl">วันที่ต้องการ</span><span class="val">${fmtDate(j.date_needed)}</span>
+      <span class="lbl">ความเร่งด่วน</span>${urgencyBoxes(j.urgency)}
+    </div>
+    <div class="pf-row"><span class="lbl">พื้นที่</span><span class="val">${escapeHtml(j.area)}</span></div>
+    <div class="pf-row"><span class="lbl">ชื่อเครื่องจักร</span><span class="val">${escapeHtml(j.machine)}</span></div>
+    <div class="pf-boxlabel">รายละเอียด</div>
+    <div class="pf-box" style="min-height:110px;">${escapeHtml(j.description)}</div>
+    <div class="pf-boxlabel">หมายเหตุ</div>
+    <div class="pf-box" style="min-height:36px;">${escapeHtml(j.note)}</div>
+    <div class="pf-sig">
+      <div class="sigcol">
+        <div class="sig-label">อนุญาต<span class="sig-dots"></span></div>
+        <div class="sig-date">${j.approval_status==='approved' ? `อนุมัติทางระบบโดย ${escapeHtml(j.approved_by)} (หัวหน้าแผนก ${escapeHtml(j.approved_by_dept || j.department)}) วันที่ ${fmtDate(j.approved_at)}` : 'วันที่ ............./............./.............'}</div>
+        <div class="sig-role">หัวหน้าแผนก</div>
+      </div>
+      <div class="sigcol">
+        <div class="sig-label">ตรวจสอบ<span class="sig-dots"></span></div>
+        <div class="sig-date">วันที่ ............./............./.............</div>
+        <div class="sig-role">เจ้าหน้าที่ซ่อมบำรุง</div>
+      </div>
+    </div>
+  `;
+  document.getElementById('printRequestContent').innerHTML = html;
+  document.getElementById('printRequestContent').style.display = 'block';
+  document.getElementById('printRequestFooter').textContent = `${formCode}  REV.06  EFF. 21/07/2026`;
+  document.getElementById('printRequestFooter').style.display = 'block';
+  document.getElementById('printRequestRefnote').textContent = `เลขที่อ้างอิงระบบ (ก่อนซิงค์เข้า Excel): ${j.id}`;
+  document.getElementById('printRequestRefnote').style.display = 'block';
+  document.getElementById('printWorkOrderContent').style.display = 'none';
+  document.getElementById('printWorkOrderFooter').style.display = 'none';
+  document.getElementById('printWorkOrderRefnote').style.display = 'none';
+  return { job: j, formCode };
+}
+
+function printRequestForm(id){
+  const res = buildRequestFormContent(id);
+  if(!res) return;
+  setTimeout(()=>{
+    try{ window.print(); }
+    catch(e){ showMsg('พิมพ์ไม่สำเร็จในหน้านี้ ลองเปิดไฟล์ในแท็บเบราว์เซอร์แยกต่างหากแล้วพิมพ์อีกครั้ง', 'error'); }
+  }, 50);
+}
+
+function starRow(label, value){
+  const cols = [5,4,3,2,1];
+  return `<tr><td>${label}</td>` + cols.map(c=>`<td>${value===c ? '<span class="pf-check">&#10003;</span>' : ''}</td>`).join('') + `</tr>`;
+}
+
+function buildWorkOrderFormContent(id){
+  const j = jobs[id];
+  if(!j){ showMsg('ไม่พบข้อมูลใบแจ้งงาน', 'error'); return null; }
+  const jobNoRaw = j.job_no || '';
+  const jobNo = jobNoRaw ? (/^MN/i.test(jobNoRaw) ? jobNoRaw : 'MN '+jobNoRaw) : 'MN ............';
+  const html = `
+    <img class="pf-logo" src="${LOGO_DATA_URI}" alt="Unilamp">
+    <div class="pf-header3">
+      <div class="side">
+        <div class="lbl">งานเลขที่</div>
+        <div>${escapeHtml(jobNo)}</div>
+      </div>
+      <div class="pf-title" style="margin:0;">WORK  ORDER</div>
+      <div class="side right">
+        <div class="lbl">วันที่</div>
+        <div>${fmtDate(j.date_reported)}</div>
+      </div>
+    </div>
+    <div class="pf-subtitle">ใบสั่งงาน</div>
+    <div class="pf-row">
+      <span class="lbl">แผนกที่แจ้งงาน</span><span class="val">${escapeHtml(j.department)}</span>
+      <span class="lbl">ชื่อผู้แจ้งงาน</span><span class="val">${escapeHtml(j.requester)}</span>
+    </div>
+    <div class="pf-row">
+      <span class="lbl">วันที่ต้องการ</span><span class="val">${fmtDate(j.date_needed)}</span>
+      <span class="lbl">ความเร่งด่วน</span>${urgencyBoxes(j.urgency)}
+    </div>
+    <div class="pf-boxlabel">รายละเอียดของงานที่แจ้ง</div>
+    <div class="pf-box" style="min-height:44px;">${escapeHtml(j.description)}</div>
+    <div class="pf-row">
+      <span class="lbl">แผนการดำเนินงาน</span>
+      <span class="lbl">เริ่มงาน</span><span class="val">${fmtDate(j.start_date)}</span>
+      <span class="lbl">งานเสร็จ</span><span class="val">${fmtDate(j.finish_date)}</span>
+    </div>
+    <div class="pf-boxlabel">ขั้นตอนการดำเนินงาน</div>
+    <div class="pf-box" style="min-height:34px;"></div>
+    <div class="pf-boxlabel">รายการวัสดุอุปกรณ์ที่ต้องใช้งาน</div>
+    <div class="pf-box" style="min-height:24px;"></div>
+    <div class="pf-row"><span class="lbl">ชื่อผู้ปฏิบัติงาน</span><span class="val">${escapeHtml(j.assignee)}</span></div>
+    <div class="pf-row"><span class="lbl">ชื่อผู้ควบคุมงาน</span><span class="val"></span></div>
+    <div class="pf-sig">
+      <div class="sigcol">
+        <div class="sig-label">ผู้อนุมัติใบสั่งงาน</div>
+        <div class="sig-line">ลงชื่อ<span class="sig-dots"></span></div>
+        <div class="sig-date">............./............./.............</div>
+        <div class="sig-role">ผจก./หัวหน้าแผนกซ่อมบำรุง</div>
+      </div>
+      <div class="sigcol">
+        <div class="sig-label">ผู้รับทราบและอนุญาตทำงาน</div>
+        <div class="sig-line">ลงชื่อ<span class="sig-dots"></span></div>
+        <div class="sig-date">............./............./.............</div>
+        <div class="sig-role">ผจก./หัวหน้าแผนกที่แจ้งงาน</div>
+      </div>
+    </div>
+    <hr class="pf-hr">
+    <div class="pf-boxlabel">สรุปผลการดำเนินงาน</div>
+    <div class="pf-box" style="min-height:64px;">${escapeHtml(j.close_note)}</div>
+    <div class="pf-sig pf-sig-single">
+      <div class="sigcol">
+        <div class="sig-label">ผู้ตรวจสอบ / ผู้ควบคุมงาน</div>
+        <div class="sig-line">ลงชื่อ<span class="sig-dots"></span></div>
+        <div class="sig-date">............./............./.............</div>
+      </div>
+    </div>
+    <hr class="pf-hr">
+    <div class="pf-boxlabel">ประเมินความพึงพอใจของผู้แจ้งงาน (ทำเครื่องหมาย &#10003;ในช่องที่ประเมิน)</div>
+    <table class="pf-table">
+      <tr><th>ระดับความพึงพอใจ</th><th>ดีมาก (5)</th><th>ดี (4)</th><th>ปานกลาง (3)</th><th>พอใช้ (2)</th><th>ปรับปรุง (1)</th></tr>
+      ${starRow('คุณภาพของงาน', j.quality)}
+      ${starRow('ระยะเวลาในการทำงาน', j.time_score)}
+      ${starRow('การบริการ', j.service)}
+    </table>
+    <div class="pf-sig pf-sig-single">
+      <div class="sigcol">
+        <div class="sig-label">ผู้ประเมิน/ผู้ปิดงาน</div>
+        <div class="sig-line">ลงชื่อ<span class="sig-dots"></span></div>
+        <div class="sig-date">............./............./.............</div>
+        <div class="sig-role">ผจก./หัวหน้าแผนกที่แจ้งงาน</div>
+      </div>
+    </div>
+    <hr class="pf-hr">
+    <div class="pf-boxlabel">วิเคราะห์ปัญหาและสาเหตุ</div>
+    <div class="pf-box" style="min-height:54px;"></div>
+    <div class="pf-sig">
+      <div class="sigcol">
+        <div class="sig-label">ผู้ทำการวิเคราะห์ปัญหาและสาเหตุ</div>
+        <div class="sig-line">ลงชื่อ<span class="sig-dots"></span></div>
+        <div class="sig-date">............./............./.............</div>
+      </div>
+      <div class="sigcol">
+        <div class="sig-label">ผู้รับทราบ</div>
+        <div class="sig-line">ลงชื่อ<span class="sig-dots"></span></div>
+        <div class="sig-date">............./............./.............</div>
+        <div class="sig-role">ผจก./หัวหน้าแผนกซ่อมบำรุง</div>
+      </div>
+    </div>
+  `;
+  document.getElementById('printWorkOrderContent').innerHTML = html;
+  document.getElementById('printWorkOrderContent').style.display = 'block';
+  document.getElementById('printWorkOrderFooter').textContent = 'FR-MN-07  REV.08  EFF. 21/07/2026';
+  document.getElementById('printWorkOrderFooter').style.display = 'block';
+  document.getElementById('printWorkOrderRefnote').textContent = `เลขที่อ้างอิงระบบ (ก่อนซิงค์เข้า Excel): ${j.id}`;
+  document.getElementById('printWorkOrderRefnote').style.display = 'block';
+  document.getElementById('printRequestContent').style.display = 'none';
+  document.getElementById('printRequestFooter').style.display = 'none';
+  document.getElementById('printRequestRefnote').style.display = 'none';
+  return { job: j };
+}
+
+function printWorkOrderForm(id){
+  const res = buildWorkOrderFormContent(id);
+  if(!res) return;
+  setTimeout(()=>{
+    try{ window.print(); }
+    catch(e){ showMsg('พิมพ์ไม่สำเร็จในหน้านี้ ลองเปิดไฟล์ในแท็บเบราว์เซอร์แยกต่างหากแล้วพิมพ์อีกครั้ง', 'error'); }
+  }, 50);
+}
+
+loadJobs();
+</script>
+</body>
+</html>
