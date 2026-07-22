@@ -1294,8 +1294,7 @@ function buildRequestFormContent(id){
   document.getElementById('printRequestContent').style.display = 'block';
   document.getElementById('printRequestFooter').textContent = `${formCode}  REV.06  EFF. 21/07/2026`;
   document.getElementById('printRequestFooter').style.display = 'block';
-  document.getElementById('printRequestRefnote').textContent = `เลขที่อ้างอิงระบบ (ก่อนซิงค์เข้า Excel): ${j.id}`;
-  document.getElementById('printRequestRefnote').style.display = 'block';
+  document.getElementById('printRequestRefnote').style.display = 'none';
   document.getElementById('printWorkOrderContent').style.display = 'none';
   document.getElementById('printWorkOrderFooter').style.display = 'none';
   document.getElementById('printWorkOrderRefnote').style.display = 'none';
@@ -1346,7 +1345,7 @@ function buildWorkOrderFormContent(id){
     <div class="pf-boxlabel">รายละเอียดของงานที่แจ้ง</div>
     <div class="pf-box" style="min-height:44px;">${escapeHtml(j.description)}</div>
     <div class="pf-row">
-      <span class="lbl">แผนการดำเนินงาน</span>
+      <span class="lbl">แผนการดำเนินงาน</span><span class="val">.........../.........../...........</span>
       <span class="lbl">เริ่มงาน</span><span class="val">${fmtDate(j.start_date)}</span>
       <span class="lbl">งานเสร็จ</span><span class="val">${fmtDate(j.finish_date)}</span>
     </div>
@@ -1417,8 +1416,7 @@ function buildWorkOrderFormContent(id){
   document.getElementById('printWorkOrderContent').style.display = 'block';
   document.getElementById('printWorkOrderFooter').textContent = 'FR-MN-07  REV.08  EFF. 21/07/2026';
   document.getElementById('printWorkOrderFooter').style.display = 'block';
-  document.getElementById('printWorkOrderRefnote').textContent = `เลขที่อ้างอิงระบบ (ก่อนซิงค์เข้า Excel): ${j.id}`;
-  document.getElementById('printWorkOrderRefnote').style.display = 'block';
+  document.getElementById('printWorkOrderRefnote').style.display = 'none';
   document.getElementById('printRequestContent').style.display = 'none';
   document.getElementById('printRequestFooter').style.display = 'none';
   document.getElementById('printRequestRefnote').style.display = 'none';
