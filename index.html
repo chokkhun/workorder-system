@@ -515,7 +515,7 @@ let stars = { m_quality: 0, m_time: 0, m_service: 0 };
 */
 const LS_PREFIX = 'wo_';
 const REMOTE_URL_KEY = 'workorder_remote_url';
-const DEFAULT_REMOTE_URL = 'https://script.google.com/macros/s/AKfycbxZjNBrwtN-4zyEcYkAH32CH0gLdtn3NRZnX6vZRkP95r7GNLao0rOmwf67sKRS3v-zSw/exec';
+const DEFAULT_REMOTE_URL = 'https://script.google.com/macros/s/AKfycbwbB6WBN2SHRV0gznrjG6XwSRNgZSUydVm9KsdN5YOFptqYK1QUF08OP0nLLtBHT0uqYw/exec';
 
 function getRemoteUrl(){ try{ return (localStorage.getItem(REMOTE_URL_KEY) || '').trim(); }catch(e){ return ''; } }
 function setRemoteUrl(u){ try{ if(u) localStorage.setItem(REMOTE_URL_KEY, u); else localStorage.removeItem(REMOTE_URL_KEY); }catch(e){} }
