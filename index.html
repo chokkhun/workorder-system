@@ -473,7 +473,7 @@
     <div class="card">
       <p style="font-size:13px; color:var(--ink-soft); margin:0 0 12px;">
         วางลิงก์ Web App ของ Google Apps Script ที่ deploy ไว้ เพื่อให้ทุกเครื่องที่เปิดไฟล์นี้เห็นข้อมูลชุดเดียวกันแบบเรียลไทม์ (ไม่ต้องอยู่ในแชท)
-        กรอกครั้งเดียวต่อเครื่อง/เบราว์เซอร์
+        ระบบจะใช้ลิงก์เริ่มต้นที่ตั้งไว้ในไฟล์นี้เสมอเมื่อเปิดใหม่ — ค่าที่กรอกในหน้านี้ใช้ได้เฉพาะรอบเปิดไฟล์ปัจจุบัน (แท็บ/รีเฟรชนี้) เท่านั้น ไม่ถูกจดจำไว้ในเครื่อง
       </p>
       <div class="field">
         <label>Web App URL</label>
@@ -502,12 +502,15 @@ let stars = { m_quality: 0, m_time: 0, m_service: 0 };
      sandbox when this is opened via the chat link. Shared + real-time
      automatically, no setup needed.
 
-  2) "remote"        A Google Apps Script Web App URL saved via the ⚙️
-     settings button. This is the real standalone hosting option: any
-     device/browser that opens this .html file and has the same URL saved
-     talks to the same Google Sheet acting as a shared database — real
-     multi-device sync outside the chat, no login system of its own needed
-     beyond the existing staff PIN.
+  2) "remote"        A Google Apps Script Web App URL. The URL baked into
+     this file (DEFAULT_REMOTE_URL below) is what every device/browser that
+     opens this .html file uses to talk to the same Google Sheet acting as
+     a shared database — real multi-device sync outside the chat, no login
+     system of its own needed beyond the existing staff PIN. The ⚙️
+     settings button lets someone point at a *different* URL to test it,
+     but that override is kept in memory only for the current tab/session —
+     it is never written to localStorage, so every fresh page load always
+     falls back to DEFAULT_REMOTE_URL.
 
   3) "local"         Plain browser localStorage. Last-resort fallback when
      neither of the above is configured — works fully offline but data
@@ -515,10 +518,15 @@ let stars = { m_quality: 0, m_time: 0, m_service: 0 };
 */
 const LS_PREFIX = 'wo_';
 const REMOTE_URL_KEY = 'workorder_remote_url';
-const DEFAULT_REMOTE_URL = 'https://script.google.com/macros/s/AKfycbwbB6WBN2SHRV0gznrjG6XwSRNgZSUydVm9KsdN5YOFptqYK1QUF08OP0nLLtBHT0uqYw/exec';
+const DEFAULT_REMOTE_URL = 'https://script.google.com/macros/s/AKfycbyD4gUqiq_peVDYQ3f95T0MWF-_OLAi_6ScVweDIfXNsa7o3hNLBNvP_K2osA52s3yT/exec';
 
-function getRemoteUrl(){ try{ return (localStorage.getItem(REMOTE_URL_KEY) || '').trim(); }catch(e){ return ''; } }
-function setRemoteUrl(u){ try{ if(u) localStorage.setItem(REMOTE_URL_KEY, u); else localStorage.removeItem(REMOTE_URL_KEY); }catch(e){} }
+// The remote URL is no longer remembered across reloads. It's only kept in
+// memory for the current page session (e.g. to test a different link),
+// and any previously-saved value in localStorage is wiped on load below.
+let sessionRemoteUrl = null;
+function getRemoteUrl(){ return sessionRemoteUrl || ''; }
+function setRemoteUrl(u){ sessionRemoteUrl = (u || '').trim() || null; }
+try{ localStorage.removeItem(REMOTE_URL_KEY); }catch(e){}
 
 const localStorageAdapter = {
   async list(prefix){
@@ -686,7 +694,7 @@ function saveRemoteUrl(){
   setRemoteUrl(url);
   closeSettings();
   initStorage();
-  showMsg(url ? 'บันทึกการตั้งค่าแล้ว กำลังโหลดข้อมูลใหม่...' : 'ล้างการตั้งค่าแล้ว', 'success');
+  showMsg(url ? 'ใช้ลิงก์นี้สำหรับรอบเปิดไฟล์ปัจจุบัน กำลังโหลดข้อมูลใหม่... (จะกลับไปใช้ค่าเริ่มต้นเมื่อเปิดไฟล์ใหม่)' : 'ล้างการตั้งค่าแล้ว', 'success');
   loadJobs();
 }
 
