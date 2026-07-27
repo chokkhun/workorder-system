@@ -1323,6 +1323,13 @@ function starRow(label, value){
   return `<tr><td>${label}</td>` + cols.map(c=>`<td>${value===c ? '<span class="pf-check">&#10003;</span>' : ''}</td>`).join('') + `</tr>`;
 }
 
+function buildWorkOrderDetailText(j){
+  const parts = [j.description || ''];
+  if(j.area) parts.push(`พื้นที่ ${j.area}`);
+  if(j.machine) parts.push(`เครื่องจักร ${j.machine}`);
+  return parts.filter(p => p).join('  |  ');
+}
+
 function buildWorkOrderFormContent(id){
   const j = jobs[id];
   if(!j){ showMsg('ไม่พบข้อมูลใบแจ้งงาน', 'error'); return null; }
@@ -1351,7 +1358,7 @@ function buildWorkOrderFormContent(id){
       <span class="lbl">ความเร่งด่วน</span>${urgencyBoxes(j.urgency)}
     </div>
     <div class="pf-boxlabel">รายละเอียดของงานที่แจ้ง</div>
-    <div class="pf-box" style="min-height:44px;">${escapeHtml(j.description)}</div>
+    <div class="pf-box" style="min-height:44px;">${escapeHtml(buildWorkOrderDetailText(j))}</div>
     <div class="pf-row">
       <span class="lbl">แผนการดำเนินงาน</span><span class="val">.........../.........../...........</span>
       <span class="lbl">เริ่มงาน</span><span class="val">${fmtDate(j.start_date)}</span>
